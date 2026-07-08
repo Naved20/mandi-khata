@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { exportToCSV, downloadLedgerPDF, printContent } from '@/utils/exportUtils';
 
 export default function CustomerProfilePage() {
   const params = useParams();
   const customerId = params.id;
   const [customer, setCustomer] = useState(null);
   const [ledgerEntries, setLedgerEntries] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [transactionType, setTransactionType] = useState('udhar_cash');
@@ -17,10 +19,13 @@ export default function CustomerProfilePage() {
     paymentMethod: 'cash',
     notes: '',
     date: new Date().toISOString().split('T')[0],
+    inventoryItemId: '',
+    quantity: '',
   });
 
   useEffect(() => {
     fetchCustomerData();
+    fetchInventory();
   }, [customerId]);
 
   const fetchCustomerData = async () => {
@@ -37,6 +42,16 @@ export default function CustomerProfilePage() {
     }
   };
 
+  const fetchInventory = async () => {
+    try {
+      const response = await fetch('/api/inventory');
+      const data = await response.json();
+      setInventory(data.inventory || []);
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+    }
+  };
+
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -45,32 +60,75 @@ export default function CustomerProfilePage() {
   const handleSubmitTransaction = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId,
-          transactionType,
-          particular: formData.particular,
-          amount: parseFloat(formData.amount),
-          paymentMethod: formData.paymentMethod,
-          notes: formData.notes,
-          date: formData.date,
-        }),
-      });
+      if (transactionType === 'udhar_inventory') {
+        if (!formData.inventoryItemId || !formData.quantity) {
+          throw new Error('Please select inventory item and quantity');
+        }
+        if (parseInt(formData.quantity) <= 0) {
+          throw new Error('Quantity must be greater than 0');
+        }
+        const inventoryItem = inventory.find(i => i._id === formData.inventoryItemId);
+        if (!inventoryItem) {
+          throw new Error('Inventory item not found');
+        }
+        const amount = parseInt(formData.quantity) * inventoryItem.sellingPrice;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error);
+        const response = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerId,
+            transactionType,
+            particular: `${inventoryItem.itemName} - ${formData.quantity} ${inventoryItem.unit}`,
+            amount,
+            inventoryItemId: formData.inventoryItemId,
+            quantity: parseInt(formData.quantity),
+            paymentMethod: 'none',
+            notes: formData.notes,
+            date: formData.date,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error);
+        }
+      } else {
+        // Validate amount for cash transactions
+        if (!formData.amount || parseFloat(formData.amount) <= 0) {
+          throw new Error('Amount must be greater than 0');
+        }
+
+        const response = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerId,
+            transactionType,
+            particular: formData.particular,
+            amount: parseFloat(formData.amount),
+            paymentMethod: formData.paymentMethod,
+            notes: formData.notes,
+            date: formData.date,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error);
+        }
       }
 
       setShowTransactionModal(false);
+      setTransactionType('udhar_cash');
       setFormData({
         particular: '',
         amount: '',
         paymentMethod: 'cash',
         notes: '',
         date: new Date().toISOString().split('T')[0],
+        inventoryItemId: '',
+        quantity: '',
       });
       fetchCustomerData();
     } catch (error) {
@@ -95,12 +153,32 @@ export default function CustomerProfilePage() {
             <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
             <p className="text-sm text-gray-600 mt-1">{customer.mobileNumber}</p>
           </div>
-          <button
-            onClick={() => setShowTransactionModal(true)}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-          >
-            Add Transaction
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadLedgerPDF(customer.name, ledgerEntries)}
+              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Ledger
+            </button>
+            <button
+              onClick={() => printContent('ledger-table', `${customer.name} - Digital Ledger`)}
+              className="px-4 py-2 bg-green-50 text-green-600 rounded-lg font-medium hover:bg-green-100 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4H7a2 2 0 01-2-2v-4a2 2 0 012-2h10a2 2 0 012 2v4a2 2 0 01-2 2zm2-6a2 2 0 100-4 2 2 0 000 4z" />
+              </svg>
+              Print Ledger
+            </button>
+            <button
+              onClick={() => setShowTransactionModal(true)}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+            >
+              Add Transaction
+            </button>
+          </div>
         </div>
       </header>
 
@@ -164,7 +242,7 @@ export default function CustomerProfilePage() {
             <h2 className="text-lg font-bold text-gray-900">Digital Bahi-Khata (Ledger)</h2>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" id="ledger-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -222,6 +300,58 @@ export default function CustomerProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Customer Purchase History */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-8">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">Purchase History</h2>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Item / Particular</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Quantity</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {ledgerEntries
+                  .filter(entry => entry.debit > 0 && entry.transactionType.startsWith('udhar'))
+                  .map((entry) => (
+                    <tr key={entry._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {new Date(entry.date).toLocaleDateString('en-IN')}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                        {entry.particular}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-right">
+                        {entry.quantity ? `${entry.quantity} ${entry.unit}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
+                        ₹{entry.debit.toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
+                          {entry.transactionType === 'udhar_inventory' ? 'Inventory' : 'Cash'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {ledgerEntries.filter(entry => entry.debit > 0).length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No purchase history
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Transaction Modal */}
@@ -242,39 +372,120 @@ export default function CustomerProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type *</label>
                 <select
                   value={transactionType}
-                  onChange={(e) => setTransactionType(e.target.value)}
+                  onChange={(e) => {
+                    setTransactionType(e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      particular: '',
+                      amount: '',
+                      inventoryItemId: '',
+                      quantity: '',
+                    }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <option value="udhar_cash">Udhar (Cash Loan)</option>
-                  <option value="jama_cash">Jama (Cash Payment)</option>
-                  <option value="jama_upi">Jama (UPI Payment)</option>
-                  <option value="jama_bank">Jama (Bank Transfer)</option>
-                  <option value="jama_cheque">Jama (Cheque)</option>
+                  <optgroup label="Udhar">
+                    <option value="udhar_cash">Cash Loan</option>
+                    <option value="udhar_inventory">Inventory Udhar</option>
+                  </optgroup>
+                  <optgroup label="Jama">
+                    <option value="jama_cash">Cash Payment</option>
+                    <option value="jama_upi">UPI Payment</option>
+                    <option value="jama_bank">Bank Transfer</option>
+                    <option value="jama_cheque">Cheque</option>
+                  </optgroup>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Particular *</label>
-                <input
-                  type="text"
-                  name="particular"
-                  value={formData.particular}
-                  onChange={handleFormChange}
-                  placeholder="e.g., Soyabean Sale, Cash Payment"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
+
+              {/* Inventory Udhar Section */}
+              {transactionType === 'udhar_inventory' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Inventory Item *</label>
+                    <select
+                      value={formData.inventoryItemId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, inventoryItemId: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Select an item</option>
+                      {inventory.map(item => (
+                        <option key={item._id} value={item._id}>
+                          {item.itemName} (Stock: {item.currentStock} {item.unit})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleFormChange}
+                      placeholder="Enter quantity"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                  {formData.inventoryItemId && formData.quantity && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Calculated Amount:</span> ₹
+                        {(
+                          parseInt(formData.quantity) * 
+                          (inventory.find(i => i._id === formData.inventoryItemId)?.sellingPrice || 0)
+                        ).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Cash/Other Transactions Section */}
+              {transactionType !== 'udhar_inventory' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Particular *</label>
+                    <input
+                      type="text"
+                      name="particular"
+                      value={formData.particular}
+                      onChange={handleFormChange}
+                      placeholder="e.g., Advance Payment"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                    <input
+                      type="number"
+                      name="amount"
+                      value={formData.amount}
+                      onChange={handleFormChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Payment Method for Jama */}
+              {transactionType.startsWith('jama_') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <select
+                    value={formData.paymentMethod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="bank">Bank</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                 <input
@@ -299,7 +510,19 @@ export default function CustomerProfilePage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowTransactionModal(false)}
+                  onClick={() => {
+                    setShowTransactionModal(false);
+                    setTransactionType('udhar_cash');
+                    setFormData({
+                      particular: '',
+                      amount: '',
+                      paymentMethod: 'cash',
+                      notes: '',
+                      date: new Date().toISOString().split('T')[0],
+                      inventoryItemId: '',
+                      quantity: '',
+                    });
+                  }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300"
                 >
                   Cancel

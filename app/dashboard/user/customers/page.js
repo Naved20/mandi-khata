@@ -20,6 +20,8 @@ export default function CustomersPage() {
     notes: '',
     openingBalance: 0,
   });
+  const [editingId, setEditingId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -45,9 +47,25 @@ export default function CustomersPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate opening balance
+    if (formData.openingBalance < 0) {
+      alert('Opening balance cannot be negative');
+      return;
+    }
+
+    // Validate mobile number format
+    if (!/^\d{10}$/.test(formData.mobileNumber.replace(/\D/g, ''))) {
+      alert('Mobile number should be 10 digits');
+      return;
+    }
+
     try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
+      const url = editingId ? `/api/customers/${editingId}` : '/api/customers';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
@@ -58,6 +76,7 @@ export default function CustomersPage() {
       }
 
       setShowModal(false);
+      setEditingId(null);
       setFormData({
         name: '',
         mobileNumber: '',
@@ -73,6 +92,47 @@ export default function CustomersPage() {
     } catch (error) {
       alert(error.message);
     }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this customer?')) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      const response = await fetch(`/api/customers/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error);
+      }
+
+      fetchCustomers();
+      alert('Customer deleted successfully');
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleEdit = (customer) => {
+    setEditingId(customer._id);
+    setFormData({
+      name: customer.name,
+      mobileNumber: customer.mobileNumber,
+      village: customer.village || '',
+      address: customer.address || '',
+      aadhaar: customer.aadhaar || '',
+      gstNumber: customer.gstNumber || '',
+      customerType: customer.customerType,
+      notes: customer.notes || '',
+      openingBalance: customer.openingBalance,
+    });
+    setShowModal(true);
   };
 
   const filteredCustomers = customers.filter(c => {
@@ -134,9 +194,9 @@ export default function CustomersPage() {
         {/* Customer Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCustomers.map((customer) => (
-            <Link key={customer._id} href={`/dashboard/user/customers/${customer._id}`}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-start justify-between mb-4">
+            <div key={customer._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow">
+              <Link href={`/dashboard/user/customers/${customer._id}`}>
+                <div className="flex items-start justify-between mb-4 cursor-pointer">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">{customer.name}</h3>
                     <p className="text-sm text-gray-500">{customer.mobileNumber}</p>
@@ -173,8 +233,25 @@ export default function CustomersPage() {
                     Last transaction: {new Date(customer.lastTransactionDate).toLocaleDateString('en-IN')}
                   </p>
                 )}
+              </Link>
+
+              {/* Action Buttons */}
+              <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
+                <button
+                  onClick={() => handleEdit(customer)}
+                  className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-100 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(customer._id)}
+                  disabled={deleting}
+                  className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  Delete
+                </button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 
@@ -190,9 +267,23 @@ export default function CustomersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-lg font-bold text-gray-900">Add New Customer</h2>
+              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Customer' : 'Add New Customer'}</h2>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingId(null);
+                  setFormData({
+                    name: '',
+                    mobileNumber: '',
+                    village: '',
+                    address: '',
+                    aadhaar: '',
+                    gstNumber: '',
+                    customerType: 'farmer',
+                    notes: '',
+                    openingBalance: 0,
+                  });
+                }}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
@@ -299,7 +390,21 @@ export default function CustomersPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingId(null);
+                    setFormData({
+                      name: '',
+                      mobileNumber: '',
+                      village: '',
+                      address: '',
+                      aadhaar: '',
+                      gstNumber: '',
+                      customerType: 'farmer',
+                      notes: '',
+                      openingBalance: 0,
+                    });
+                  }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300"
                 >
                   Cancel
@@ -308,7 +413,7 @@ export default function CustomersPage() {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
                 >
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

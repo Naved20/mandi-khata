@@ -63,6 +63,14 @@ export async function POST(req) {
       );
     }
 
+    // Validate amount is positive
+    if (amount <= 0) {
+      return Response.json(
+        { error: 'Amount must be greater than 0' },
+        { status: 400 }
+      );
+    }
+
     // Fetch customer
     const customer = await Customer.findById(customerId);
     if (!customer) {

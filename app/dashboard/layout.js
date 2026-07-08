@@ -1,5 +1,5 @@
 import Sidebar from '@/components/Sidebar';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export const metadata = {
   title: 'MandiGrow - Dashboard',

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-export function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isChecking, setIsChecking] = (0, require('react')).useState(true);
-  const [isAuthorized, setIsAuthorized] = (0, require('react')).useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {

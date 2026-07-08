@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { exportToCSV, downloadLedgerPDF, printContent } from '@/utils/exportUtils';
 
@@ -23,12 +23,7 @@ export default function CustomerProfilePage() {
     quantity: '',
   });
 
-  useEffect(() => {
-    fetchCustomerData();
-    fetchInventory();
-  }, [customerId]);
-
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/customers/${customerId}`);
@@ -39,6 +34,13 @@ export default function CustomerProfilePage() {
       console.error('Error fetching customer:', error);
     } finally {
       setLoading(false);
+    }
+  }, [customerId]);
+
+  useEffect(() => {
+    fetchCustomerData();
+    fetchInventory();
+  }, [customerId, fetchCustomerData]);
     }
   };
 

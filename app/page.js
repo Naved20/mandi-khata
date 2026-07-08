@@ -306,7 +306,7 @@ const LandingPage = () => {
             <div className="bg-gray-800 rounded-xl p-6 mb-8">
               <div className="text-center">
                 <h3 className="text-white font-bold text-lg mb-4">Get in Touch</h3>
-                <p className="text-gray-400 mb-6">Have questions? We're here to help!</p>
+                <p className="text-gray-400 mb-6">Have questions? We&apos;re here to help!</p>
                 <div className="grid md:grid-cols-3 gap-4">
                   <a 
                     href="tel:8878502349"

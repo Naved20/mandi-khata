@@ -76,7 +76,7 @@ export default function UserDashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm  ">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
         <div className="px-8 py-5">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-600 mt-1">Digital Ledger & Inventory System</p>
@@ -84,7 +84,7 @@ export default function UserDashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="  px-8 py-8">
+      <main className="ml-64 px-8 py-8">
         {/* Welcome Banner */}
         {user && (
           <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-6 mb-8">

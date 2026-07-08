@@ -150,7 +150,7 @@ export default function CustomersPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40  ">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
@@ -166,7 +166,7 @@ export default function CustomersPage() {
       </header>
 
       {/* Main Content */}
-      <main className="  max-w-7xl mx-auto px-8 py-8">
+      <main className="ml-64 max-w-7xl mx-auto px-8 py-8">
         {/* Search and Filter */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

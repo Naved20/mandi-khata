@@ -145,9 +145,9 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <div className="  min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
@@ -183,7 +183,7 @@ export default function CustomerProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-8">
+      <main className="ml-64 max-w-7xl mx-auto px-8 py-8">
         {/* Profile Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

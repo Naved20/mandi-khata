@@ -77,7 +77,7 @@ export default function UserDashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-8 py-6 flex items-center justify-between">
+        <div className="px-8 py-6 flex items-center justify-between max-w-full">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-sm text-gray-500 mt-1">Complete Mandi Khata Management System</p>

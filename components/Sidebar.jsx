@@ -104,7 +104,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 h-screen fixed left-0 top-0 overflow-y-auto flex flex-col shadow-lg">
+    <aside className="w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 h-screen fixed left-0 top-0 overflow-y-auto flex flex-col shadow-lg z-50">
       {/* Brand Section */}
       <div className="p-6 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">

@@ -37,14 +37,7 @@ export default function CustomerProfilePage() {
     }
   }, [customerId]);
 
-  useEffect(() => {
-    fetchCustomerData();
-    fetchInventory();
-  }, [customerId, fetchCustomerData]);
-    }
-  };
-
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async () => {
     try {
       const response = await fetch('/api/inventory');
       const data = await response.json();
@@ -52,7 +45,12 @@ export default function CustomerProfilePage() {
     } catch (error) {
       console.error('Error fetching inventory:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCustomerData();
+    fetchInventory();
+  }, [fetchCustomerData, fetchInventory]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;

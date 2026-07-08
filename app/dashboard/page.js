@@ -255,8 +255,8 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="ml-64 min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-6xl mx-auto ml-64">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-bold text-red-900 mb-2">Connection Error</h2>
             <p className="text-red-700">{error}</p>
@@ -285,9 +285,9 @@ export default function DashboardPage() {
   const displayStats = stats || defaultStats;
 
   return (
-    <div className="ml-64 min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 ml-64">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Command Center</h1>

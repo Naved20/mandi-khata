@@ -8,7 +8,7 @@ export default function UserDashboardLayout({ children }) {
     <ProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1  ">
           {children}
         </div>
       </div>

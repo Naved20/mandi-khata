@@ -89,7 +89,7 @@ export default function UserDashboardPage() {
         {user && (
           <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900">Welcome back, {user.name}!</h2>
-            <p className="text-sm text-gray-600 mt-1">Here's your business overview for today</p>
+            <p className="text-sm text-gray-600 mt-1">Here&apos;s your business overview for today</p>
           </div>
         )}
 

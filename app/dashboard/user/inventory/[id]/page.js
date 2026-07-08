@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
 export default function InventoryDetailPage() {
@@ -10,11 +10,7 @@ export default function InventoryDetailPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchInventoryData();
-  }, [inventoryId]);
-
-  const fetchInventoryData = async () => {
+  const fetchInventoryData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/inventory/${inventoryId}`);
@@ -33,7 +29,11 @@ export default function InventoryDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [inventoryId]);
+
+  useEffect(() => {
+    fetchInventoryData();
+  }, [fetchInventoryData]);
 
   if (loading) {
     return (

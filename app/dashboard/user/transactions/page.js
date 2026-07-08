@@ -113,7 +113,7 @@ export default function TransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 ml-64">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
           <p className="text-sm text-gray-600 mt-1">View and manage all ledger transactions</p>

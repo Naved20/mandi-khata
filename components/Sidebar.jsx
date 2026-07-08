@@ -104,11 +104,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 h-screen fixed left-0 top-0 overflow-y-auto flex flex-col shadow-lg z-50">
+    <aside className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 overflow-y-auto flex flex-col">
       {/* Brand Section */}
-      <div className="p-6 border-b border-gray-200 bg-white">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center relative bg-green-100 rounded-lg">
+          <div className="w-10 h-10 flex items-center justify-center relative">
             <Image 
               src="/logo01.png" 
               alt="Mandi Khata" 
@@ -120,65 +120,65 @@ export default function Sidebar() {
             />
           </div>
           <div>
-            <h1 className="text-base font-bold text-gray-900">Mandi Khata</h1>
-            <p className="text-xs text-gray-500">v1.0</p>
+            <h1 className="text-lg font-bold text-gray-900">Mandi Khata</h1>
+            <p className="text-xs text-gray-500">Dashboard</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Label */}
-      <div className="px-6 py-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</p>
-      </div>
-
       {/* Navigation Items */}
-      <nav className="px-3 flex-1 space-y-1">
-        {currentItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+      <nav className="mt-6 px-4 flex-1">
+        <div className="space-y-2">
+          {currentItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                isActive
-                  ? 'bg-green-600 text-white shadow-md'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <span className={`transition-colors ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-green-600'}`}>
-                {item.icon}
-              </span>
-              <span className="font-medium text-sm">{item.name}</span>
-              {isActive && (
-                <div className="ml-auto w-1.5 h-6 bg-white rounded-r-full"></div>
-              )}
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-green-50 text-green-700 font-medium shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span className={isActive ? 'text-green-600' : 'text-gray-400'}>
+                  {item.icon}
+                </span>
+                <span>{item.name}</span>
+                {isActive && (
+                  <div className="ml-auto w-1 h-6 bg-green-600 rounded-r-full"></div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
-      {/* User Section */}
-      <div className="px-4 py-4 border-t border-gray-200 bg-gray-50 space-y-4">
+      {/* User Section & Logout */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
         {user && (
-          <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Current User</p>
-            <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-            <p className="text-xs text-gray-500 truncate">{user.email}</p>
-            <p className="text-xs text-gray-400 capitalize mt-1 inline-block bg-gray-200 px-2 py-1 rounded">
-              {user.role}
-            </p>
+          <div className="mb-4">
+            <p className="text-xs text-gray-600 mb-1">Logged in as</p>
+            <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+            <p className="text-xs text-gray-600">{user.email}</p>
+            <p className="text-xs text-gray-500 capitalize mt-1">Role: {user.role}</p>
           </div>
         )}
         <button
           onClick={handleLogout}
-          className="w-full py-2.5 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-all duration-200 flex items-center justify-center gap-2 border border-red-200"
+          className="w-full py-2 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           Logout
         </button>
+      </div>
+
+      {/* Footer Info */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <p className="text-xs text-gray-500 text-center">Mandi Khata v1.0</p>
       </div>
     </aside>
   );

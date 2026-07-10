@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getAuthHeaders } from '@/utils/api';
 
 export default function UserDashboardPage() {
   const [user, setUser] = useState(null);
@@ -28,10 +29,22 @@ export default function UserDashboardPage() {
     try {
       setLoading(true);
       const [customersRes, transactionsRes, inventoryRes] = await Promise.all([
-        fetch('/api/customers'),
-        fetch('/api/transactions'),
-        fetch('/api/inventory'),
+        fetch('/api/customers', {
+          headers: getAuthHeaders(),
+        }),
+        fetch('/api/transactions', {
+          headers: getAuthHeaders(),
+        }),
+        fetch('/api/inventory', {
+          headers: getAuthHeaders(),
+        }),
       ]);
+
+      if (customersRes.status === 401 || transactionsRes.status === 401 || inventoryRes.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
 
       const customersData = await customersRes.json();
       const transactionsData = await transactionsRes.json();
@@ -74,22 +87,21 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
-        <div className="px-8 py-5">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">Digital Ledger & Inventory System</p>
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-5">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Digital Ledger & Inventory System</p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="ml-64 px-8 py-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Welcome Banner */}
         {user && (
-          <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900">Welcome back, {user.name}!</h2>
-            <p className="text-sm text-gray-600 mt-1">Here&apos;s your business overview for today</p>
+          <div>
+
           </div>
         )}
 

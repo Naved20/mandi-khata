@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { exportToCSV, printContent } from '@/utils/exportUtils';
+import { getAuthHeaders } from '@/utils/api';
 
 const transactionTypeLabels = {
-  udhar_inventory: 'Udhar - Inventory',
-  udhar_cash: 'Udhar - Cash',
-  jama_cash: 'Jama - Cash',
-  jama_upi: 'Jama - UPI',
-  jama_bank: 'Jama - Bank',
-  jama_cheque: 'Jama - Cheque',
+  udhar: 'Udhar',
+  jama: 'Jama',
 };
 
 export default function TransactionsPage() {
@@ -30,7 +27,16 @@ export default function TransactionsPage() {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/transactions');
+      const response = await fetch('/api/transactions', {
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       setTransactions(data.transactions || []);
     } catch (error) {
@@ -42,7 +48,16 @@ export default function TransactionsPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch('/api/customers', {
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       setCustomers(data.customers || []);
     } catch (error) {
@@ -113,7 +128,7 @@ export default function TransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
           <p className="text-sm text-gray-600 mt-1">View and manage all ledger transactions</p>
@@ -121,7 +136,7 @@ export default function TransactionsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="ml-64 max-w-7xl mx-auto px-8 py-8">
+      <main className=" max-w-7xl mx-auto px-8 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

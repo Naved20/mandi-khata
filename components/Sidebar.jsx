@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { logout } from '@/utils/api';
 
 const userNavigationItems = [
   {
@@ -83,9 +84,7 @@ const adminNavigationItems = [
   },
 ];
 
-const navigationItems = userNavigationItems;
-
-export default function Sidebar() {
+export default function Sidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -106,89 +105,119 @@ export default function Sidebar() {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 overflow-y-auto flex flex-col">
-      {/* Brand Section */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center relative">
-            <Image 
-              src="/logo01.png" 
-              alt="Mandi Khata" 
-              width={100}
-              height={100}
-              className="object-contain"
-              priority
-              unoptimized
-            />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Mandi Khata</h1>
-            <p className="text-xs text-gray-500">Dashboard</p>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-50
+          overflow-y-auto flex flex-col transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Brand Section */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center relative">
+                <Image 
+                  src="/logo01.png" 
+                  alt="Mandi Khata" 
+                  width={100}
+                  height={100}
+                  className="object-contain"
+                  priority
+                  unoptimized
+                />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Mandi Khata</h1>
+                <p className="text-xs text-gray-500">Dashboard</p>
+              </div>
+            </div>
+            {/* Close button for mobile */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Items */}
-      <nav className="mt-6 px-4 flex-1">
-        <div className="space-y-2">
-          {currentItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        {/* Navigation Items */}
+        <nav className="mt-6 px-4 flex-1">
+          <div className="space-y-2">
+            {currentItems.map((item) => {
+              // Exact match for dashboard, prefix match for others
+              const isActive = item.href === '/dashboard/user' 
+                ? pathname === item.href 
+                : pathname === item.href || pathname.startsWith(item.href + '/');
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-green-50 text-green-700 font-medium shadow-sm'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className={isActive ? 'text-green-600' : 'text-gray-400'}>
-                  {item.icon}
-                </span>
-                <span>{item.name}</span>
-                {isActive && (
-                  <div className="ml-auto w-1 h-6 bg-green-600 rounded-r-full"></div>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* User Section & Logout */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        {user && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-600 mb-1">Logged in as</p>
-            <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-            <p className="text-xs text-gray-600">{user.email}</p>
-            <p className="text-xs text-gray-500 capitalize mt-1">Role: {user.role}</p>
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)} // Close sidebar on mobile after click
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-green-50 text-green-700 font-medium shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={isActive ? 'text-green-600' : 'text-gray-400'}>
+                    {item.icon}
+                  </span>
+                  <span>{item.name}</span>
+                  {isActive && (
+                    <div className="ml-auto w-1 h-6 bg-green-600 rounded-r-full"></div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-        )}
-        <button
-          onClick={handleLogout}
-          className="w-full py-2 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Logout
-        </button>
-      </div>
+        </nav>
 
-      {/* Footer Info */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">Mandi Khata v1.0</p>
-      </div>
-    </aside>
+        {/* User Section & Logout */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          {user && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-600 mb-1">Logged in as</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+              <p className="text-xs text-gray-600 truncate">{user.email}</p>
+              <p className="text-xs text-gray-500 capitalize mt-1">Role: {user.role}</p>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
+        </div>
+
+        {/* Footer Info */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <p className="text-xs text-gray-500 text-center">Mandi Khata v1.0</p>
+        </div>
+      </aside>
+    </>
   );
 }

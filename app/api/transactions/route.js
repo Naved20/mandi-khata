@@ -2,13 +2,19 @@ import { connectDB } from '@/lib/mongodb';
 import LedgerEntry from '@/models/LedgerEntry';
 import Customer from '@/models/Customer';
 import Inventory from '@/models/Inventory';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const { customerId } = req.nextUrl.searchParams;
-    let query = {};
+    let query = { userId };
 
     if (customerId) {
       query.customerId = customerId;
@@ -42,6 +48,11 @@ export async function POST(req) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const {
       customerId,
       transactionType,
@@ -71,8 +82,8 @@ export async function POST(req) {
       );
     }
 
-    // Fetch customer
-    const customer = await Customer.findById(customerId);
+    // Fetch customer (must belong to this user)
+    const customer = await Customer.findOne({ _id: customerId, userId });
     if (!customer) {
       return Response.json(
         { error: 'Customer not found' },
@@ -85,9 +96,9 @@ export async function POST(req) {
     let actualAmount = amount || 0;
 
     // Determine debit/credit based on transaction type
-    if (transactionType.startsWith('udhar')) {
+    if (transactionType === 'udhar') {
       debit = actualAmount;
-    } else if (transactionType.startsWith('jama')) {
+    } else if (transactionType === 'jama') {
       credit = actualAmount;
     }
 
@@ -96,6 +107,7 @@ export async function POST(req) {
 
     // Create ledger entry
     const ledgerEntry = new LedgerEntry({
+      userId,
       customerId,
       transactionType,
       particular,
@@ -104,7 +116,7 @@ export async function POST(req) {
       runningBalance,
       inventoryItemId: inventoryItemId || null,
       quantity: quantity || null,
-      unit: inventoryItemId ? (await Inventory.findById(inventoryItemId)).unit : null,
+      unit: inventoryItemId ? (await Inventory.findOne({ _id: inventoryItemId, userId }))?.unit : null,
       rate: rate || null,
       paymentMethod: paymentMethod || 'cash',
       notes,
@@ -126,14 +138,14 @@ export async function POST(req) {
 
     await customer.save();
 
-    // If it's an inventory transaction, reduce stock
-    if (inventoryItemId && transactionType === 'udhar_inventory' && quantity) {
-      const inventoryItem = await Inventory.findById(inventoryItemId);
-      if (inventoryItem) {
-        inventoryItem.currentStock -= quantity;
-        await inventoryItem.save();
-      }
-    }
+    // If it's an inventory transaction, reduce stock (removed - no stock tracking now)
+    // if (inventoryItemId && transactionType === 'udhar' && quantity) {
+    //   const inventoryItem = await Inventory.findOne({ _id: inventoryItemId, userId });
+    //   if (inventoryItem) {
+    //     inventoryItem.currentStock -= quantity;
+    //     await inventoryItem.save();
+    //   }
+    // }
 
     return Response.json(
       {

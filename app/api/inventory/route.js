@@ -1,11 +1,18 @@
 import { connectDB } from '@/lib/mongodb';
 import Inventory from '@/models/Inventory';
+import PriceHistory from '@/models/PriceHistory';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req) {
   try {
     await connectDB();
 
-    const inventory = await Inventory.find({ isActive: true })
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
+    const inventory = await Inventory.find({ userId, isActive: true })
       .sort({ itemName: 1 });
 
     return Response.json(
@@ -31,18 +38,23 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { itemName, category, currentStock, unit, buyingPrice, sellingPrice, reorderLevel, notes } = await req.json();
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
+    const { itemName, price, notes } = await req.json();
 
     // Validate required fields
-    if (!itemName || !category || !unit || !buyingPrice || !sellingPrice) {
+    if (!itemName || !price) {
       return Response.json(
-        { error: 'Please provide all required fields' },
+        { error: 'Please provide itemName and price' },
         { status: 400 }
       );
     }
 
-    // Check if item already exists
-    const existingItem = await Inventory.findOne({ itemName });
+    // Check if item already exists FOR THIS USER
+    const existingItem = await Inventory.findOne({ userId, itemName });
     if (existingItem) {
       return Response.json(
         { error: 'Item already exists' },
@@ -52,17 +64,26 @@ export async function POST(req) {
 
     // Create new inventory item
     const item = new Inventory({
+      userId,
       itemName,
-      category,
-      currentStock: currentStock || 0,
-      unit,
-      buyingPrice,
-      sellingPrice,
-      reorderLevel: reorderLevel || 0,
+      price,
       notes,
     });
 
     await item.save();
+
+    // Save initial price history
+    const priceHistory = new PriceHistory({
+      userId,
+      inventoryItemId: item._id,
+      itemName: item.itemName,
+      oldPrice: 0,
+      newPrice: price,
+      changeType: 'created',
+      notes: 'Item created with initial price',
+    });
+
+    await priceHistory.save();
 
     return Response.json(
       {

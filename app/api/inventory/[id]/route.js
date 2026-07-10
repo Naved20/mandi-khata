@@ -1,12 +1,19 @@
 import { connectDB } from '@/lib/mongodb';
 import Inventory from '@/models/Inventory';
+import PriceHistory from '@/models/PriceHistory';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req, { params }) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const { id } = params;
-    const item = await Inventory.findById(id);
+    const item = await Inventory.findOne({ _id: id, userId });
 
     if (!item) {
       return Response.json(
@@ -15,10 +22,16 @@ export async function GET(req, { params }) {
       );
     }
 
+    // Fetch price history for this item
+    const priceHistory = await PriceHistory.find({ inventoryItemId: id, userId })
+      .sort({ createdAt: -1 })
+      .limit(50); // Limit to last 50 price changes
+
     return Response.json(
       {
         success: true,
         item,
+        priceHistory,
       },
       { status: 200 }
     );
@@ -38,10 +51,15 @@ export async function PUT(req, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
-    const { itemName, category, currentStock, unit, buyingPrice, sellingPrice, reorderLevel, notes } = await req.json();
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
 
-    const item = await Inventory.findById(id);
+    const { id } = params;
+    const { itemName, price, notes } = await req.json();
+
+    const item = await Inventory.findOne({ _id: id, userId });
 
     if (!item) {
       return Response.json(
@@ -50,15 +68,27 @@ export async function PUT(req, { params }) {
       );
     }
 
+    const oldPrice = item.price;
+
     // Update fields
     if (itemName) item.itemName = itemName;
-    if (category) item.category = category;
-    if (currentStock !== undefined) item.currentStock = currentStock;
-    if (unit) item.unit = unit;
-    if (buyingPrice) item.buyingPrice = buyingPrice;
-    if (sellingPrice) item.sellingPrice = sellingPrice;
-    if (reorderLevel !== undefined) item.reorderLevel = reorderLevel;
-    if (notes) item.notes = notes;
+    if (price !== undefined && price !== oldPrice) {
+      item.price = price;
+
+      // Save price history when price changes
+      const priceHistory = new PriceHistory({
+        userId,
+        inventoryItemId: item._id,
+        itemName: item.itemName,
+        oldPrice: oldPrice,
+        newPrice: price,
+        changeType: 'updated',
+        notes: notes || 'Price updated',
+      });
+
+      await priceHistory.save();
+    }
+    if (notes !== undefined) item.notes = notes;
 
     item.updatedAt = new Date();
     await item.save();
@@ -87,8 +117,13 @@ export async function DELETE(req, { params }) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const { id } = params;
-    const item = await Inventory.findById(id);
+    const item = await Inventory.findOne({ _id: id, userId });
 
     if (!item) {
       return Response.json(

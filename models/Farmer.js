@@ -17,10 +17,6 @@ const farmerSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    openingBalance: {
-      type: Number,
-      default: 0,
-    },
     createdAt: {
       type: Date,
       default: Date.now,

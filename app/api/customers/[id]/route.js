@@ -1,13 +1,19 @@
 import { connectDB } from '@/lib/mongodb';
 import Customer from '@/models/Customer';
 import LedgerEntry from '@/models/LedgerEntry';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req, { params }) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const { id } = params;
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findOne({ _id: id, userId });
 
     if (!customer) {
       return Response.json(
@@ -16,8 +22,8 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Fetch ledger entries for this customer
-    const ledgerEntries = await LedgerEntry.find({ customerId: id })
+    // Fetch ledger entries for this customer (also filtered by userId)
+    const ledgerEntries = await LedgerEntry.find({ customerId: id, userId })
       .sort({ date: -1 });
 
     return Response.json(
@@ -44,11 +50,16 @@ export async function PUT(req, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
-    const { name, mobileNumber, village, address, aadhaar, gstNumber, customerType, notes } = await req.json();
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
 
-    // Find customer
-    const customer = await Customer.findById(id);
+    const { id } = params;
+    const { name, mobileNumber, village, address, notes } = await req.json();
+
+    // Find customer (must belong to this user)
+    const customer = await Customer.findOne({ _id: id, userId });
 
     if (!customer) {
       return Response.json(
@@ -57,9 +68,9 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Check if mobile number is being changed and if new number already exists
+    // Check if mobile number is being changed and if new number already exists FOR THIS USER
     if (mobileNumber && mobileNumber !== customer.mobileNumber) {
-      const existingCustomer = await Customer.findOne({ mobileNumber });
+      const existingCustomer = await Customer.findOne({ userId, mobileNumber });
       if (existingCustomer) {
         return Response.json(
           { error: 'Mobile number already exists' },
@@ -73,9 +84,6 @@ export async function PUT(req, { params }) {
     if (name) customer.name = name;
     if (village) customer.village = village;
     if (address) customer.address = address;
-    if (aadhaar) customer.aadhaar = aadhaar;
-    if (gstNumber) customer.gstNumber = gstNumber;
-    if (customerType) customer.customerType = customerType;
     if (notes) customer.notes = notes;
 
     customer.updatedAt = new Date();
@@ -105,8 +113,13 @@ export async function DELETE(req, { params }) {
   try {
     await connectDB();
 
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
     const { id } = params;
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findOne({ _id: id, userId });
 
     if (!customer) {
       return Response.json(

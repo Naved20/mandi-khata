@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const ledgerEntrySchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User ID is required'],
+      index: true,
+    },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Customer',
@@ -9,7 +15,7 @@ const ledgerEntrySchema = new mongoose.Schema(
     },
     transactionType: {
       type: String,
-      enum: ['udhar_inventory', 'udhar_cash', 'jama_cash', 'jama_upi', 'jama_bank', 'jama_cheque'],
+      enum: ['udhar', 'jama'],
       required: [true, 'Please provide transaction type'],
     },
     particular: {
@@ -44,7 +50,7 @@ const ledgerEntrySchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'upi', 'bank', 'cheque', 'none'],
+      enum: ['cash', 'upi', 'none'],
       default: 'cash',
     },
     notes: {
@@ -76,7 +82,7 @@ const ledgerEntrySchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-ledgerEntrySchema.index({ customerId: 1, date: -1 });
-ledgerEntrySchema.index({ date: -1 });
+ledgerEntrySchema.index({ userId: 1, customerId: 1, date: -1 });
+ledgerEntrySchema.index({ userId: 1, date: -1 });
 
 export default mongoose.models.LedgerEntry || mongoose.model('LedgerEntry', ledgerEntrySchema);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { exportToCSV, printContent } from '@/utils/exportUtils';
+import { getAuthHeaders } from '@/utils/api';
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState('outstanding');
@@ -19,9 +20,19 @@ export default function ReportsPage() {
     try {
       setLoading(true);
       const [customersRes, transactionsRes] = await Promise.all([
-        fetch('/api/customers'),
-        fetch('/api/transactions')
+        fetch('/api/customers', {
+          headers: getAuthHeaders(),
+        }),
+        fetch('/api/transactions', {
+          headers: getAuthHeaders(),
+        })
       ]);
+      
+      if (customersRes.status === 401 || transactionsRes.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
       
       const customersData = await customersRes.json();
       const transactionsData = await transactionsRes.json();
@@ -40,7 +51,6 @@ export default function ReportsPage() {
       id: c._id,
       name: c.name,
       mobile: c.mobileNumber,
-      type: c.customerType,
       outstanding: c.currentBalance,
       totalUdhar: c.totalUdhar,
       totalJama: c.totalJama,
@@ -122,7 +132,6 @@ export default function ReportsPage() {
       dataToExport = outstandingData.map(row => ({
         'Customer Name': row.name,
         'Mobile': row.mobile,
-        'Type': row.type,
         'Outstanding (₹)': row.outstanding,
         'Total Udhar (₹)': row.totalUdhar,
         'Total Jama (₹)': row.totalJama,
@@ -135,7 +144,6 @@ export default function ReportsPage() {
         .map(customer => ({
           'Customer Name': customer.name,
           'Mobile': customer.mobileNumber,
-          'Type': customer.customerType,
           'Pending Amount (₹)': customer.currentBalance,
           'Last Transaction': customer.lastTransactionDate ? new Date(customer.lastTransactionDate).toLocaleDateString('en-IN') : '-',
         }));
@@ -172,7 +180,7 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-sm text-gray-600 mt-1">View detailed business reports and insights</p>
@@ -180,7 +188,7 @@ export default function ReportsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="ml-64 max-w-7xl mx-auto px-8 py-8">
+      <main className="max-w-7xl mx-auto px-8 py-8">
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -340,7 +348,6 @@ export default function ReportsPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mobile</th>
                         <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Pending Amount</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Last Transaction</th>
@@ -350,7 +357,6 @@ export default function ReportsPage() {
                       {customers.filter(c => c.currentBalance > 0).sort((a, b) => b.currentBalance - a.currentBalance).map((customer) => (
                         <tr key={customer._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">{customer.name}</td>
-                          <td className="px-6 py-4 text-sm capitalize"><span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{customer.customerType}</span></td>
                           <td className="px-6 py-4 text-sm text-gray-600">{customer.mobileNumber}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-blue-600">
                             ₹{customer.currentBalance.toLocaleString('en-IN')}

@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'user'],
       default: 'user',
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null, // null for self-registered or first admin
+    },
     phone: {
       type: String,
       trim: true,

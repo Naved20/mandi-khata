@@ -5,8 +5,8 @@ import jwt from 'jsonwebtoken';
 const generateToken = (userId) => {
   return jwt.sign(
     { userId },
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-    { expiresIn: '7d' }
+    process.env.JWT_SECRET,
+    { expiresIn: '365d' } // Token valid for 1 year - user only expires on logout
   );
 };
 

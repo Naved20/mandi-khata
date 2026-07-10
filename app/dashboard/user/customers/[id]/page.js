@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { exportToCSV, downloadLedgerPDF, printContent } from '@/utils/exportUtils';
+import { getAuthHeaders } from '@/utils/api';
 
 export default function CustomerProfilePage() {
   const params = useParams();
@@ -12,7 +13,7 @@ export default function CustomerProfilePage() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [transactionType, setTransactionType] = useState('udhar_cash');
+  const [transactionType, setTransactionType] = useState('udhar');
   const [formData, setFormData] = useState({
     particular: '',
     amount: '',
@@ -26,7 +27,16 @@ export default function CustomerProfilePage() {
   const fetchCustomerData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/customers/${customerId}`);
+      const response = await fetch(`/api/customers/${customerId}`, {
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       setCustomer(data.customer);
       setLedgerEntries(data.ledgerEntries || []);
@@ -39,7 +49,16 @@ export default function CustomerProfilePage() {
 
   const fetchInventory = useCallback(async () => {
     try {
-      const response = await fetch('/api/inventory');
+      const response = await fetch('/api/inventory', {
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       setInventory(data.inventory || []);
     } catch (error) {
@@ -60,7 +79,8 @@ export default function CustomerProfilePage() {
   const handleSubmitTransaction = async (e) => {
     e.preventDefault();
     try {
-      if (transactionType === 'udhar_inventory') {
+      if (transactionType === 'udhar') {
+        // Udhar requires inventory item
         if (!formData.inventoryItemId || !formData.quantity) {
           throw new Error('Please select inventory item and quantity');
         }
@@ -71,15 +91,18 @@ export default function CustomerProfilePage() {
         if (!inventoryItem) {
           throw new Error('Inventory item not found');
         }
-        const amount = parseInt(formData.quantity) * inventoryItem.sellingPrice;
+        const amount = parseInt(formData.quantity) * (inventoryItem.price || 0);
 
         const response = await fetch('/api/transactions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
           body: JSON.stringify({
             customerId,
-            transactionType,
-            particular: `${inventoryItem.itemName} - ${formData.quantity} ${inventoryItem.unit}`,
+            transactionType: 'udhar',
+            particular: `${inventoryItem.itemName} - ${formData.quantity}`,
             amount,
             inventoryItemId: formData.inventoryItemId,
             quantity: parseInt(formData.quantity),
@@ -89,22 +112,34 @@ export default function CustomerProfilePage() {
           }),
         });
 
+        if (response.status === 401) {
+          alert('Session expired. Please login again.');
+          window.location.href = '/login';
+          return;
+        }
+
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.error);
         }
       } else {
-        // Validate amount for cash transactions
+        // Jama - Cash or UPI payment
         if (!formData.amount || parseFloat(formData.amount) <= 0) {
           throw new Error('Amount must be greater than 0');
+        }
+        if (!formData.particular) {
+          throw new Error('Please provide payment details');
         }
 
         const response = await fetch('/api/transactions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
           body: JSON.stringify({
             customerId,
-            transactionType,
+            transactionType: 'jama',
             particular: formData.particular,
             amount: parseFloat(formData.amount),
             paymentMethod: formData.paymentMethod,
@@ -113,6 +148,12 @@ export default function CustomerProfilePage() {
           }),
         });
 
+        if (response.status === 401) {
+          alert('Session expired. Please login again.');
+          window.location.href = '/login';
+          return;
+        }
+
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.error);
@@ -120,7 +161,7 @@ export default function CustomerProfilePage() {
       }
 
       setShowTransactionModal(false);
-      setTransactionType('udhar_cash');
+      setTransactionType('udhar');
       setFormData({
         particular: '',
         amount: '',
@@ -147,7 +188,7 @@ export default function CustomerProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ml-64">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
@@ -183,7 +224,7 @@ export default function CustomerProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="ml-64 max-w-7xl mx-auto px-8 py-8">
+      <main className="max-w-7xl mx-auto px-8 py-8">
         {/* Profile Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -225,14 +266,6 @@ export default function CustomerProfilePage() {
               <p className="text-sm text-gray-600">Address</p>
               <p className="font-medium text-gray-900">{customer.address || '-'}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Aadhaar</p>
-              <p className="font-medium text-gray-900">{customer.aadhaar || '-'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">GST Number</p>
-              <p className="font-medium text-gray-900">{customer.gstNumber || '-'}</p>
-            </div>
           </div>
         </div>
 
@@ -264,7 +297,7 @@ export default function CustomerProfilePage() {
                         <p className="font-medium">{entry.particular}</p>
                         {entry.quantity && (
                           <p className="text-xs text-gray-500">
-                            {entry.quantity} {entry.unit}
+                            {entry.quantity} kg
                           </p>
                         )}
                       </div>
@@ -320,7 +353,7 @@ export default function CustomerProfilePage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {ledgerEntries
-                  .filter(entry => entry.debit > 0 && entry.transactionType.startsWith('udhar'))
+                  .filter(entry => entry.debit > 0 && entry.transactionType === 'udhar')
                   .map((entry) => (
                     <tr key={entry._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">
@@ -330,14 +363,14 @@ export default function CustomerProfilePage() {
                         {entry.particular}
                       </td>
                       <td className="px-6 py-4 text-sm text-right">
-                        {entry.quantity ? `${entry.quantity} ${entry.unit}` : '-'}
+                        {entry.quantity ? `${entry.quantity} kg` : '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
                         ₹{entry.debit.toLocaleString('en-IN')}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
-                          {entry.transactionType === 'udhar_inventory' ? 'Inventory' : 'Cash'}
+                          Inventory
                         </span>
                       </td>
                     </tr>
@@ -384,21 +417,13 @@ export default function CustomerProfilePage() {
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <optgroup label="Udhar">
-                    <option value="udhar_cash">Cash Loan</option>
-                    <option value="udhar_inventory">Inventory Udhar</option>
-                  </optgroup>
-                  <optgroup label="Jama">
-                    <option value="jama_cash">Cash Payment</option>
-                    <option value="jama_upi">UPI Payment</option>
-                    <option value="jama_bank">Bank Transfer</option>
-                    <option value="jama_cheque">Cheque</option>
-                  </optgroup>
+                  <option value="udhar">Udhar (Inventory)</option>
+                  <option value="jama">Jama (Payment)</option>
                 </select>
               </div>
 
-              {/* Inventory Udhar Section */}
-              {transactionType === 'udhar_inventory' && (
+              {/* Udhar - Inventory Section */}
+              {transactionType === 'udhar' && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Inventory Item *</label>
@@ -406,23 +431,25 @@ export default function CustomerProfilePage() {
                       value={formData.inventoryItemId}
                       onChange={(e) => setFormData(prev => ({ ...prev, inventoryItemId: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      required
                     >
                       <option value="">Select an item</option>
                       {inventory.map(item => (
                         <option key={item._id} value={item._id}>
-                          {item.itemName} (Stock: {item.currentStock} {item.unit})
+                          {item.itemName} - ₹{(item.price || 0).toLocaleString('en-IN')}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (kg) *</label>
                     <input
                       type="number"
                       name="quantity"
                       value={formData.quantity}
                       onChange={handleFormChange}
-                      placeholder="Enter quantity"
+                      placeholder="Enter quantity in kg"
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
@@ -432,7 +459,7 @@ export default function CustomerProfilePage() {
                         <span className="font-medium">Calculated Amount:</span> ₹
                         {(
                           parseInt(formData.quantity) * 
-                          (inventory.find(i => i._id === formData.inventoryItemId)?.sellingPrice || 0)
+                          (inventory.find(i => i._id === formData.inventoryItemId)?.price || 0)
                         ).toLocaleString('en-IN')}
                       </p>
                     </div>
@@ -440,8 +467,8 @@ export default function CustomerProfilePage() {
                 </>
               )}
 
-              {/* Cash/Other Transactions Section */}
-              {transactionType !== 'udhar_inventory' && (
+              {/* Jama - Payment Section */}
+              {transactionType === 'jama' && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Particular *</label>
@@ -450,7 +477,7 @@ export default function CustomerProfilePage() {
                       name="particular"
                       value={formData.particular}
                       onChange={handleFormChange}
-                      placeholder="e.g., Advance Payment"
+                      placeholder="e.g., Payment for previous purchase"
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
@@ -462,28 +489,23 @@ export default function CustomerProfilePage() {
                       name="amount"
                       value={formData.amount}
                       onChange={handleFormChange}
+                      placeholder="Enter amount"
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                    <select
+                      value={formData.paymentMethod}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="upi">UPI</option>
+                    </select>
+                  </div>
                 </>
-              )}
-
-              {/* Payment Method for Jama */}
-              {transactionType.startsWith('jama_') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                  <select
-                    value={formData.paymentMethod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="upi">UPI</option>
-                    <option value="bank">Bank</option>
-                    <option value="cheque">Cheque</option>
-                  </select>
-                </div>
               )}
 
               <div>

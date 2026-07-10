@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getAuthHeaders } from '@/utils/api';
 
 export default function UdhariManagementPage() {
   const [customers, setCustomers] = useState([]);
@@ -16,7 +17,16 @@ export default function UdhariManagementPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/customers');
+      const response = await fetch('/api/customers', {
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        alert('Session expired. Please login again.');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       setCustomers(data.customers || []);
     } catch (error) {

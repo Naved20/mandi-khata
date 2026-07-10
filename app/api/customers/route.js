@@ -1,12 +1,18 @@
 import { connectDB } from '@/lib/mongodb';
 import Customer from '@/models/Customer';
 import LedgerEntry from '@/models/LedgerEntry';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req) {
   try {
     await connectDB();
 
-    const customers = await Customer.find({ isActive: true })
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
+    const customers = await Customer.find({ userId, isActive: true })
       .sort({ createdAt: -1 });
 
     return Response.json(
@@ -32,7 +38,12 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { name, mobileNumber, village, address, aadhaar, gstNumber, customerType, notes, openingBalance } = await req.json();
+    // Require authentication and get userId
+    const auth = requireAuth(req);
+    if (auth.error) return auth.response;
+    const { userId } = auth;
+
+    const { name, mobileNumber, village, address, notes } = await req.json();
 
     // Validate required fields
     if (!name || !mobileNumber) {
@@ -42,8 +53,8 @@ export async function POST(req) {
       );
     }
 
-    // Check if customer already exists
-    const existingCustomer = await Customer.findOne({ mobileNumber });
+    // Check if customer already exists FOR THIS USER
+    const existingCustomer = await Customer.findOne({ userId, mobileNumber });
     if (existingCustomer) {
       return Response.json(
         { error: 'Customer with this mobile number already exists' },
@@ -53,33 +64,16 @@ export async function POST(req) {
 
     // Create new customer
     const customer = new Customer({
+      userId,
       name,
       mobileNumber,
       village,
       address,
-      aadhaar,
-      gstNumber,
-      customerType: customerType || 'farmer',
       notes,
-      openingBalance: openingBalance || 0,
-      currentBalance: openingBalance || 0,
+      currentBalance: 0,
     });
 
     await customer.save();
-
-    // If opening balance exists, create a ledger entry
-    if (openingBalance && openingBalance > 0) {
-      const ledgerEntry = new LedgerEntry({
-        customerId: customer._id,
-        transactionType: 'udhar_cash',
-        particular: 'Opening Balance',
-        debit: openingBalance,
-        runningBalance: openingBalance,
-        date: new Date(),
-        paymentMethod: 'none',
-      });
-      await ledgerEntry.save();
-    }
 
     return Response.json(
       {

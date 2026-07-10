@@ -71,21 +71,21 @@ function StatCard({ title, value, icon, subItems, variant = 'default' }) {
 
   return (
     <div
-      className={`rounded-xl border ${variantClasses[variant]} shadow-sm p-6 hover:shadow-md transition-shadow`}
+      className={`rounded-lg sm:rounded-xl border ${variantClasses[variant]} shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow`}
     >
       <div className="flex items-start justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <div className="p-2 bg-white rounded-lg shadow-sm">{icon}</div>
+        <h3 className="text-xs sm:text-sm font-medium text-gray-600">{title}</h3>
+        <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">{icon}</div>
       </div>
 
       <div className="mb-4">
-        <p className="text-3xl font-bold text-gray-900">{INR(value)}</p>
+        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{INR(value)}</p>
       </div>
 
       {subItems && subItems.length > 0 && (
         <div className="space-y-2 pt-4 border-t border-gray-200">
           {subItems.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between text-sm">
+            <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-gray-600">{item.label}</span>
               <span className={`font-medium ${item.color}`}>
                 {INR(item.value)}
@@ -102,7 +102,7 @@ function QuickActionButton({ label, icon, bgColor, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`${bgColor} text-white px-4 py-3 rounded-lg font-medium flex items-center gap-2 hover:shadow-lg transition-shadow hover:scale-105 transform`}
+      className={`${bgColor} text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium flex items-center gap-2 hover:shadow-lg transition-all hover:scale-105 transform w-full sm:w-auto justify-center sm:justify-start text-sm sm:text-base`}
     >
       {icon}
       <span>{label}</span>
@@ -119,23 +119,23 @@ function ActivityFeed() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Live Floor Feed</h2>
+    <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Live Floor Feed</h2>
       <div className="space-y-4">
         {mockActivities.map((activity) => (
           <div
             key={activity.id}
-            className="flex items-start justify-between pb-4 border-b border-gray-100 last:border-b-0 last:pb-0"
+            className="flex items-start justify-between pb-4 border-b border-gray-100 last:border-b-0 last:pb-0 gap-2"
           >
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-900">
                 {activity.description}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {activity.quantity || 'Amount'}: {activity.quantity ? activity.amount : INR(activity.amount)}
               </p>
             </div>
-            <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">
+            <span className="text-xs text-gray-400 ml-2 whitespace-nowrap flex-shrink-0">
               {activity.time}
             </span>
           </div>
@@ -147,18 +147,18 @@ function ActivityFeed() {
 
 function RevenueChart() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-6">
-        Revenue Velocity (Real-time)
+    <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
+        Revenue Velocity
       </h2>
 
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Sales</span>
-            <span className="text-sm font-bold text-green-600">65%</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">Sales</span>
+            <span className="text-xs sm:text-sm font-bold text-green-600">65%</span>
           </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
               style={{ width: '65%' }}
@@ -168,10 +168,10 @@ function RevenueChart() {
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Purchases</span>
-            <span className="text-sm font-bold text-blue-600">45%</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">Purchases</span>
+            <span className="text-xs sm:text-sm font-bold text-blue-600">45%</span>
           </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"
               style={{ width: '45%' }}
@@ -181,10 +181,10 @@ function RevenueChart() {
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Expenses</span>
-            <span className="text-sm font-bold text-orange-600">28%</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">Expenses</span>
+            <span className="text-xs sm:text-sm font-bold text-orange-600">28%</span>
           </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"
               style={{ width: '28%' }}
@@ -194,10 +194,10 @@ function RevenueChart() {
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Cash Balance</span>
-            <span className="text-sm font-bold text-purple-600">82%</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">Cash Balance</span>
+            <span className="text-xs sm:text-sm font-bold text-purple-600">82%</span>
           </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full"
               style={{ width: '82%' }}
@@ -255,8 +255,8 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6xl mx-auto ml-64">
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+        <div className="max-w-6xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-bold text-red-900 mb-2">Connection Error</h2>
             <p className="text-red-700">{error}</p>
@@ -287,19 +287,19 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 ml-64">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+Total Jama Collected      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Command Center</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Command Center</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Live Auction & Financial Overview
             </p>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <svg
-                className="w-6 h-6 text-gray-700"
+                className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -313,7 +313,7 @@ export default function DashboardPage() {
               </svg>
             </button>
 
-            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
+            <div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
               M
             </div>
           </div>
@@ -321,11 +321,11 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
         {/* Quick Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
           <QuickActionButton
-            label="Customer Payment (Receive Money)"
+            label="Customer Payment"
             icon={
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
@@ -336,7 +336,7 @@ export default function DashboardPage() {
           />
 
           <QuickActionButton
-            label="Supplier Payment (Make Payment)"
+            label="Supplier Payment"
             icon={
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
@@ -347,7 +347,7 @@ export default function DashboardPage() {
           />
 
           <QuickActionButton
-            label="Operational Costs (Mandi Expenses)"
+            label="Operational Costs"
             icon={
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
@@ -358,7 +358,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <StatCard
             title="Sales Summary"
             value={displayStats.sales.total}
@@ -368,8 +368,8 @@ export default function DashboardPage() {
               </svg>
             }
             subItems={[
-              { label: 'Cash Sales (Collected)', value: displayStats.sales.cash, color: 'text-green-600' },
-              { label: 'Udhar Sales (Outstanding)', value: displayStats.sales.udhar, color: 'text-orange-600' },
+              { label: 'Cash Sales', value: displayStats.sales.cash, color: 'text-green-600' },
+              { label: 'Udhar Sales', value: displayStats.sales.udhar, color: 'text-orange-600' },
             ]}
             variant="success"
           />
@@ -383,8 +383,8 @@ export default function DashboardPage() {
               </svg>
             }
             subItems={[
-              { label: 'Cash Purchase (Paid)', value: displayStats.purchases.cash, color: 'text-green-600' },
-              { label: 'Udhar Purchase (Outstanding)', value: displayStats.purchases.udhar, color: 'text-orange-600' },
+              { label: 'Cash Purchase', value: displayStats.purchases.cash, color: 'text-green-600' },
+              { label: 'Udhar Purchase', value: displayStats.purchases.udhar, color: 'text-orange-600' },
             ]}
             variant="primary"
           />
@@ -398,8 +398,8 @@ export default function DashboardPage() {
               </svg>
             }
             subItems={[
-              { label: 'Inflow (Payment In)', value: displayStats.assets.inflow, color: 'text-green-600' },
-              { label: 'Outflow (Payment Out)', value: displayStats.assets.outflow, color: 'text-red-600' },
+              { label: 'Inflow', value: displayStats.assets.inflow, color: 'text-green-600' },
+              { label: 'Outflow', value: displayStats.assets.outflow, color: 'text-red-600' },
             ]}
             variant={displayStats.assets.net >= 0 ? 'success' : 'danger'}
           />
@@ -417,7 +417,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Bottom Row: Charts and Feed */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <RevenueChart />
           <ActivityFeed />
         </div>

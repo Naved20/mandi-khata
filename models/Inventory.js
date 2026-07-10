@@ -2,38 +2,20 @@ import mongoose from 'mongoose';
 
 const inventorySchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User ID is required'],
+      index: true,
+    },
     itemName: {
       type: String,
       required: [true, 'Please provide item name'],
       trim: true,
     },
-    category: {
-      type: String,
-      required: [true, 'Please provide category'],
-      trim: true,
-    },
-    currentStock: {
+    price: {
       type: Number,
-      required: [true, 'Please provide current stock'],
-      default: 0,
-    },
-    unit: {
-      type: String,
-      required: [true, 'Please provide unit'],
-      enum: ['quintal', 'kg', 'liter', 'piece', 'bag', 'box'],
-      default: 'quintal',
-    },
-    buyingPrice: {
-      type: Number,
-      required: [true, 'Please provide buying price'],
-    },
-    sellingPrice: {
-      type: Number,
-      required: [true, 'Please provide selling price'],
-    },
-    reorderLevel: {
-      type: Number,
-      default: 0,
+      required: [true, 'Please provide price'],
     },
     notes: {
       type: String,
@@ -56,7 +38,6 @@ const inventorySchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-inventorySchema.index({ itemName: 1 });
-inventorySchema.index({ category: 1 });
+inventorySchema.index({ userId: 1, itemName: 1 });
 
 export default mongoose.models.Inventory || mongoose.model('Inventory', inventorySchema);

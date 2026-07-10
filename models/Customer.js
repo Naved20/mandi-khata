@@ -11,6 +11,7 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide mobile number'],
       unique: true,
+      index: true,
     },
     village: {
       type: String,
@@ -73,7 +74,6 @@ const customerSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-customerSchema.index({ mobileNumber: 1 });
 customerSchema.index({ name: 1 });
 customerSchema.index({ createdAt: -1 });
 

@@ -16,6 +16,9 @@ export const metadata = {
     'financial tracking',
     'udhar management',
   ],
+  icons: {
+    icon: '/logo01.png',
+  },
 };
 
 export default function RootLayout({ children }) {

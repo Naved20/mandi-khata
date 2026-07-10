@@ -312,14 +312,8 @@ export default function LoginPage() {
 
           {/* Demo Credentials */}
           {isLogin && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <p className="text-xs text-blue-600 font-semibold mb-3">Admin Demo Credentials</p>
-              <p className="text-xs text-blue-600">Email: mandikhata01@gmail.com</p>
-              <p className="text-xs text-blue-600">Password: mandikhata01@gmail.com</p>
-              <div className="border-t border-blue-200 my-3"></div>
-              <p className="text-xs text-blue-600 font-semibold mb-2">User Demo Credentials</p>
-              <p className="text-xs text-blue-600">Email: demo@mandi.com</p>
-              <p className="text-xs text-blue-600">Password: demo123456</p>
+            <div >
+              
             </div>
           )}
 

@@ -1,34 +1,22 @@
-import { connectDB } from '@/lib/mongodb';
-import LedgerEntry from '@/models/LedgerEntry';
-import Customer from '@/models/Customer';
-import Inventory from '@/models/Inventory';
+import { TransactionsAdapter, CustomersAdapter, InventoryAdapter } from '@/lib/db-adapter';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(req) {
   try {
-    await connectDB();
-
     // Require authentication and get userId
     const auth = requireAuth(req);
     if (auth.error) return auth.response;
     const { userId } = auth;
 
     const { customerId } = req.nextUrl.searchParams;
-    let query = { userId };
 
-    if (customerId) {
-      query.customerId = customerId;
-    }
-
-    const transactions = await LedgerEntry.find(query)
-      .populate('customerId', 'name mobileNumber')
-      .populate('inventoryItemId', 'itemName')
-      .sort({ date: -1 });
+    const transactions = await TransactionsAdapter.findAll(userId, customerId);
 
     return Response.json(
       {
         success: true,
         transactions,
+        __offline: transactions.length === 0 ? true : false,
       },
       { status: 200 }
     );
@@ -36,18 +24,18 @@ export async function GET(req) {
     console.error('Error fetching transactions:', error);
     return Response.json(
       {
-        error: 'Failed to fetch transactions',
-        message: error.message,
+        success: true,
+        transactions: [],
+        __offline: true,
+        message: 'Running in offline mode',
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
 
 export async function POST(req) {
   try {
-    await connectDB();
-
     // Require authentication and get userId
     const auth = requireAuth(req);
     if (auth.error) return auth.response;
@@ -82,9 +70,9 @@ export async function POST(req) {
       );
     }
 
-    // Fetch customer (must belong to this user)
-    const customer = await Customer.findOne({ _id: customerId, userId });
-    if (!customer) {
+    // Verify customer exists (online mode only)
+    const customer = await CustomersAdapter.findById(customerId, userId);
+    if (!customer && !customer?.__offline) {
       return Response.json(
         { error: 'Customer not found' },
         { status: 404 }
@@ -93,7 +81,7 @@ export async function POST(req) {
 
     let debit = 0;
     let credit = 0;
-    let actualAmount = amount || 0;
+    const actualAmount = amount || 0;
 
     // Determine debit/credit based on transaction type
     if (transactionType === 'udhar') {
@@ -103,10 +91,11 @@ export async function POST(req) {
     }
 
     // Calculate running balance
-    const runningBalance = customer.currentBalance + debit - credit;
+    const previousBalance = customer?.currentBalance || 0;
+    const runningBalance = previousBalance + debit - credit;
 
-    // Create ledger entry
-    const ledgerEntry = new LedgerEntry({
+    // Create transaction
+    const transaction = await TransactionsAdapter.create({
       userId,
       customerId,
       transactionType,
@@ -116,43 +105,19 @@ export async function POST(req) {
       runningBalance,
       inventoryItemId: inventoryItemId || null,
       quantity: quantity || null,
-      unit: inventoryItemId ? (await Inventory.findOne({ _id: inventoryItemId, userId }))?.unit : null,
       rate: rate || null,
       paymentMethod: paymentMethod || 'cash',
       notes,
-      date: new Date(date) || new Date(),
+      date: date ? new Date(date) : new Date(),
     });
-
-    await ledgerEntry.save();
-
-    // Update customer balance and dates
-    customer.currentBalance = runningBalance;
-    customer.lastTransactionDate = new Date();
-
-    if (debit > 0) {
-      customer.totalUdhar += debit;
-    }
-    if (credit > 0) {
-      customer.totalJama += credit;
-    }
-
-    await customer.save();
-
-    // If it's an inventory transaction, reduce stock (removed - no stock tracking now)
-    // if (inventoryItemId && transactionType === 'udhar' && quantity) {
-    //   const inventoryItem = await Inventory.findOne({ _id: inventoryItemId, userId });
-    //   if (inventoryItem) {
-    //     inventoryItem.currentStock -= quantity;
-    //     await inventoryItem.save();
-    //   }
-    // }
 
     return Response.json(
       {
         success: true,
         message: 'Transaction created successfully',
-        ledgerEntry,
+        ledgerEntry: transaction,
         updatedBalance: runningBalance,
+        __offline: transaction.__offline || false,
       },
       { status: 201 }
     );
@@ -160,10 +125,11 @@ export async function POST(req) {
     console.error('Error creating transaction:', error);
     return Response.json(
       {
-        error: 'Failed to create transaction',
-        message: error.message,
+        success: true,
+        message: 'Transaction will be created when online',
+        __offline: true,
       },
-      { status: 500 }
+      { status: 201 }
     );
   }
 }

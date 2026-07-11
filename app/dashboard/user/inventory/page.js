@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { getAuthHeaders } from '@/utils/api';
@@ -6,6 +7,7 @@ import { getAuthHeaders } from '@/utils/api';
 export default function InventoryPage() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,31 +20,33 @@ export default function InventoryPage() {
   const [priceHistory, setPriceHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Load inventory on mount
   useEffect(() => {
-    fetchInventory();
-  }, []);
+    const loadInventory = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/inventory', {
+          headers: getAuthHeaders(),
+        });
 
-  const fetchInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/inventory', {
-        headers: getAuthHeaders(),
-      });
-      
-      if (response.status === 401) {
-        alert('Session expired. Please login again.');
-        window.location.href = '/login';
-        return;
+        if (response.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          setInventory(data.inventory || []);
+        }
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      const data = await response.json();
-      setInventory(data.inventory || []);
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadInventory();
+  }, []);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;

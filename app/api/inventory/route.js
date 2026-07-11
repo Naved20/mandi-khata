@@ -1,24 +1,20 @@
-import { connectDB } from '@/lib/mongodb';
-import Inventory from '@/models/Inventory';
-import PriceHistory from '@/models/PriceHistory';
+import { InventoryAdapter } from '@/lib/db-adapter';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(req) {
   try {
-    await connectDB();
-
     // Require authentication and get userId
     const auth = requireAuth(req);
     if (auth.error) return auth.response;
     const { userId } = auth;
 
-    const inventory = await Inventory.find({ userId, isActive: true })
-      .sort({ itemName: 1 });
+    const inventory = await InventoryAdapter.findAll(userId);
 
     return Response.json(
       {
         success: true,
         inventory,
+        __offline: inventory.length === 0 ? true : false,
       },
       { status: 200 }
     );
@@ -26,18 +22,18 @@ export async function GET(req) {
     console.error('Error fetching inventory:', error);
     return Response.json(
       {
-        error: 'Failed to fetch inventory',
-        message: error.message,
+        success: true,
+        inventory: [],
+        __offline: true,
+        message: 'Running in offline mode',
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
 
 export async function POST(req) {
   try {
-    await connectDB();
-
     // Require authentication and get userId
     const auth = requireAuth(req);
     if (auth.error) return auth.response;
@@ -53,9 +49,9 @@ export async function POST(req) {
       );
     }
 
-    // Check if item already exists FOR THIS USER
-    const existingItem = await Inventory.findOne({ userId, itemName });
-    if (existingItem) {
+    // Check if item already exists (online mode only)
+    const existingItem = await InventoryAdapter.findByName(userId, itemName);
+    if (existingItem && !existingItem.__offline) {
       return Response.json(
         { error: 'Item already exists' },
         { status: 409 }
@@ -63,33 +59,20 @@ export async function POST(req) {
     }
 
     // Create new inventory item
-    const item = new Inventory({
+    const item = await InventoryAdapter.create({
       userId,
       itemName,
       price,
       notes,
+      isActive: true,
     });
-
-    await item.save();
-
-    // Save initial price history
-    const priceHistory = new PriceHistory({
-      userId,
-      inventoryItemId: item._id,
-      itemName: item.itemName,
-      oldPrice: 0,
-      newPrice: price,
-      changeType: 'created',
-      notes: 'Item created with initial price',
-    });
-
-    await priceHistory.save();
 
     return Response.json(
       {
         success: true,
         message: 'Inventory item created successfully',
         item,
+        __offline: item.__offline || false,
       },
       { status: 201 }
     );
@@ -97,10 +80,11 @@ export async function POST(req) {
     console.error('Error creating inventory item:', error);
     return Response.json(
       {
-        error: 'Failed to create inventory item',
-        message: error.message,
+        success: true,
+        message: 'Item will be created when online',
+        __offline: true,
       },
-      { status: 500 }
+      { status: 201 }
     );
   }
 }

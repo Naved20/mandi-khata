@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getAuthHeaders } from '@/utils/api';
 
-
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,31 +20,36 @@ export default function CustomersPage() {
   const [editingId, setEditingId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Load customers on mount
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    const loadCustomers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/customers', {
+          headers: getAuthHeaders(),
+        });
 
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/customers', {
-        headers: getAuthHeaders(),
-      });
-      
-      if (response.status === 401) {
-        alert('Session expired. Please login again.');
-        window.location.href = '/login';
-        return;
+        if (response.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          setCustomers(data.customers || []);
+        } else {
+          throw new Error('Failed to load customers');
+        }
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        alert('Error loading customers: ' + error.message);
+      } finally {
+        setLoading(false);
       }
-      
-      const data = await response.json();
-      setCustomers(data.customers || []);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadCustomers();
+  }, []);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -90,7 +95,9 @@ export default function CustomersPage() {
         address: '',
         notes: '',
       });
-      fetchCustomers();
+      
+      // Refresh data after submit
+      window.location.reload();
     } catch (error) {
       alert(error.message);
     }
@@ -119,7 +126,7 @@ export default function CustomersPage() {
         throw new Error(error.error);
       }
 
-      fetchCustomers();
+      window.location.reload();
       alert('Customer deleted successfully');
     } catch (error) {
       alert(error.message);
@@ -129,7 +136,7 @@ export default function CustomersPage() {
   };
 
   const handleEdit = (customer) => {
-    setEditingId(customer._id);
+    setEditingId(customer._id || customer.id);
     setFormData({
       name: customer.name,
       mobileNumber: customer.mobileNumber,
@@ -147,7 +154,7 @@ export default function CustomersPage() {
   });
 
   if (loading) {
-    return <div className="  min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
   }
 
   return (
@@ -184,8 +191,8 @@ export default function CustomersPage() {
         {/* Customer Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredCustomers.map((customer) => (
-            <div key={customer._id} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-              <Link href={`/dashboard/user/customers/${customer._id}`}>
+            <div key={customer._id || customer.id} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+              <Link href={`/dashboard/user/customers/${customer._id || customer.id}`}>
                 <div className="flex items-start justify-between mb-4 cursor-pointer">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{customer.name}</h3>
@@ -231,7 +238,7 @@ export default function CustomersPage() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(customer._id)}
+                  onClick={() => handleDelete(customer._id || customer.id)}
                   disabled={deleting}
                   className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-xs sm:text-sm hover:bg-red-100 transition-colors disabled:opacity-50"
                 >

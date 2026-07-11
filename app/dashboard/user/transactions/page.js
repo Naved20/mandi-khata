@@ -11,68 +11,57 @@ const transactionTypeLabels = {
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterCustomer, setFilterCustomer] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [customers, setCustomers] = useState([]);
 
+  // Load data on mount
   useEffect(() => {
-    fetchTransactions();
-    fetchCustomers();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        const [txRes, custRes] = await Promise.all([
+          fetch('/api/transactions', { headers: getAuthHeaders() }),
+          fetch('/api/customers', { headers: getAuthHeaders() }),
+        ]);
+
+        if (txRes.status === 401 || custRes.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (txRes.ok) {
+          const txData = await txRes.json();
+          setTransactions(txData.transactions || []);
+        }
+
+        if (custRes.ok) {
+          const custData = await custRes.json();
+          setCustomers(custData.customers || []);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/transactions', {
-        headers: getAuthHeaders(),
-      });
-      
-      if (response.status === 401) {
-        alert('Session expired. Please login again.');
-        window.location.href = '/login';
-        return;
-      }
-      
-      const data = await response.json();
-      setTransactions(data.transactions || []);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const response = await fetch('/api/customers', {
-        headers: getAuthHeaders(),
-      });
-      
-      if (response.status === 401) {
-        alert('Session expired. Please login again.');
-        window.location.href = '/login';
-        return;
-      }
-      
-      const data = await response.json();
-      setCustomers(data.customers || []);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    }
-  };
 
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = 
-      t.particular.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.customerId?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      (t.notes || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.particular || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.customerId?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesType = filterType === 'all' || t.transactionType === filterType;
-    
-    const matchesCustomer = filterCustomer === 'all' || t.customerId?._id === filterCustomer;
+    const matchesCustomer = filterCustomer === 'all' || t.customerId?._id === filterCustomer || t.customerId === filterCustomer;
     
     let matchesDateRange = true;
     if (startDate || endDate) {
@@ -99,12 +88,11 @@ export default function TransactionsPage() {
   const handleExportCSV = () => {
     const dataToExport = filteredTransactions.map(tx => ({
       'Date': new Date(tx.date).toLocaleDateString('en-IN'),
-      'Customer': tx.customerId?.name || 'Unknown',
-      'Particular': tx.particular,
+      'Customer': typeof tx.customerId === 'string' ? 'Unknown' : (tx.customerId?.name || 'Unknown'),
+      'Particular': tx.particular || '-',
       'Type': transactionTypeLabels[tx.transactionType] || tx.transactionType,
-      'Debit (₹)': tx.debit || '-',
-      'Credit (₹)': tx.credit || '-',
-      'Running Balance (₹)': tx.runningBalance,
+      'Debit (₹)': tx.debit || 0,
+      'Credit (₹)': tx.credit || 0,
     }));
 
     exportToCSV(dataToExport, 'transactions_report');
@@ -128,7 +116,7 @@ export default function TransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm ">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
           <p className="text-sm text-gray-600 mt-1">View and manage all ledger transactions</p>
@@ -136,7 +124,7 @@ export default function TransactionsPage() {
       </header>
 
       {/* Main Content */}
-      <main className=" max-w-7xl mx-auto px-8 py-8">
+      <main className="max-w-7xl mx-auto px-8 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -198,7 +186,6 @@ export default function TransactionsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              placeholder="Start Date"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
 
@@ -206,7 +193,6 @@ export default function TransactionsPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              placeholder="End Date"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -220,7 +206,7 @@ export default function TransactionsPage() {
                 setStartDate('');
                 setEndDate('');
               }}
-              className="mt-4 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              className="mt-4 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300"
             >
               Clear Filters
             </button>
@@ -234,20 +220,14 @@ export default function TransactionsPage() {
             <div className="flex gap-2">
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4H7a2 2 0 01-2-2v-4a2 2 0 012-2h10a2 2 0 012 2v4a2 2 0 01-2 2zm2-6a2 2 0 100-4 2 2 0 000 4z" />
-                </svg>
                 Print
               </button>
               <button
                 onClick={handleExportCSV}
-                className="px-4 py-2 bg-green-50 text-green-600 rounded-lg font-medium hover:bg-green-100 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-green-50 text-green-600 rounded-lg font-medium hover:bg-green-100"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
                 Export CSV
               </button>
             </div>
@@ -261,54 +241,40 @@ export default function TransactionsPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Particular</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Debit</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Credit</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Running Balance</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Debit (₹)</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Credit (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredTransactions.length > 0 ? (
                   filteredTransactions.map((transaction) => (
-                    <tr key={transaction._id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={transaction._id || transaction.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {new Date(transaction.date).toLocaleDateString('en-IN')}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        {transaction.customerId?.name || 'Unknown'}
+                        {typeof transaction.customerId === 'string' ? 'Unknown' : (transaction.customerId?.name || 'Unknown')}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {transaction.particular}
+                        {transaction.particular || transaction.notes || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                           {transactionTypeLabels[transaction.transactionType] || transaction.transactionType}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-right">
-                        {transaction.debit > 0 ? (
-                          <span className="font-semibold text-red-600">₹{transaction.debit.toLocaleString('en-IN')}</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
+                        ₹{(transaction.debit || 0).toLocaleString('en-IN')}
                       </td>
-                      <td className="px-6 py-4 text-sm text-right">
-                        {transaction.credit > 0 ? (
-                          <span className="font-semibold text-green-600">₹{transaction.credit.toLocaleString('en-IN')}</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right font-bold">
-                        <span className={transaction.runningBalance > 0 ? 'text-red-600' : 'text-green-600'}>
-                          ₹{transaction.runningBalance.toLocaleString('en-IN')}
-                        </span>
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-green-600">
+                        ₹{(transaction.credit || 0).toLocaleString('en-IN')}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
-                      No transactions found matching your filters
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      No transactions found
                     </td>
                   </tr>
                 )}
@@ -326,12 +292,12 @@ export default function TransactionsPage() {
                 <p className="text-2xl font-bold text-gray-900">{filteredTransactions.length}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Udhar Transactions</p>
-                <p className="text-2xl font-bold text-red-600">{filteredTransactions.filter(t => t.debit > 0).length}</p>
+                <p className="text-sm text-gray-600 mb-1">Total Debit</p>
+                <p className="text-2xl font-bold text-red-600">₹{totalDebit.toLocaleString('en-IN')}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Jama Transactions</p>
-                <p className="text-2xl font-bold text-green-600">{filteredTransactions.filter(t => t.credit > 0).length}</p>
+                <p className="text-sm text-gray-600 mb-1">Total Credit</p>
+                <p className="text-2xl font-bold text-green-600">₹{totalCredit.toLocaleString('en-IN')}</p>
               </div>
             </div>
           </div>

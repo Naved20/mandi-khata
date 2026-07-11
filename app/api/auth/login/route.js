@@ -6,19 +6,16 @@ const generateToken = (userId) => {
   return jwt.sign(
     { userId },
     process.env.JWT_SECRET,
-    { expiresIn: '365d' } // Token valid for 1 year - user only expires on logout
+    { expiresIn: '365d' }
   );
 };
 
 export async function POST(req) {
   try {
-    await connectDB();
-
     const { email, password } = await req.json();
 
-    console.log('Login attempt for:', email);
+    console.log('🔐 Login attempt for:', email);
 
-    // Validate required fields
     if (!email || !password) {
       return Response.json(
         { error: 'Please provide email and password' },
@@ -26,58 +23,35 @@ export async function POST(req) {
       );
     }
 
-    // Find user and select password field
+    // Connect to MongoDB
+    await connectDB();
+
+    // Find user and check password
     const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-      console.log('User not found:', email);
-      return Response.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    console.log('User found:', user.email, 'IsActive:', user.isActive);
-
-    // Check if user is active
-    if (!user.isActive) {
-      console.log('User account disabled:', email);
-      return Response.json(
-        { error: 'Account is disabled' },
-        { status: 401 }
-      );
-    }
-
-    // Check password
-    console.log('Checking password for:', email);
-    console.log('Stored hash length:', user.password?.length);
-    const isPasswordValid = await user.matchPassword(password);
-    console.log('Password valid:', isPasswordValid);
     
-    if (!isPasswordValid) {
-      console.log('Invalid password for:', email);
+    if (!user || !user.isActive || !await user.matchPassword(password)) {
+      console.log('❌ Login failed for:', email);
       return Response.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    // Update last login without triggering password re-hash
+    // Update last login
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     // Generate token
     const token = generateToken(user._id);
 
-    // Get user data without password
     const userData = {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role,
-      phone: user.phone,
+      role: user.role || 'user',
+      phone: user.phone || '',
     };
 
-    console.log('Login successful for:', email);
+    console.log('✅ Login successful for:', email);
 
     return Response.json(
       {
@@ -89,11 +63,11 @@ export async function POST(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error.message);
     return Response.json(
       {
         error: 'Login failed',
-        message: error.message,
+        message: 'Please try again later',
       },
       { status: 500 }
     );

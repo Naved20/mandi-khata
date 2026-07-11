@@ -1,0 +1,42 @@
+{
+  "name": "Mandi Khata - Complete Mandi Management System",
+  "short_name": "Mandi Khata",
+  "description": "Offline-first agricultural wholesale market management system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo01.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo01.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Customers",
+      "short_name": "Customers",
+      "description": "View customer list",
+      "url": "/dashboard/user/customers",
+      "icons": []
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Inventory",
+      "description": "Manage inventory",
+      "url": "/dashboard/user/inventory",
+      "icons": []
+    }
+  ]
+}

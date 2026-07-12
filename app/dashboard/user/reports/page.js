@@ -51,9 +51,9 @@ export default function ReportsPage() {
       id: c._id,
       name: c.name,
       mobile: c.mobileNumber,
-      outstanding: c.currentBalance,
-      totalUdhar: c.totalUdhar,
-      totalJama: c.totalJama,
+      outstanding: c.currentBalance || 0,
+      totalUdhar: c.totalUdhar || 0,
+      totalJama: c.totalJama || 0,
       lastTransaction: c.lastTransactionDate,
     })).filter(c => c.outstanding > 0).sort((a, b) => b.outstanding - a.outstanding);
   };
@@ -90,19 +90,15 @@ export default function ReportsPage() {
     return {
       outstanding: {
         count: outstandingCustomers.length,
-        totalAmount: outstandingCustomers.reduce((sum, c) => sum + c.outstanding, 0),
+        totalAmount: outstandingCustomers.reduce((sum, c) => sum + (c.outstanding || 0), 0),
       },
       sales: {
         count: salesData.length,
-        totalAmount: salesData.reduce((sum, t) => sum + t.debit, 0),
+        totalAmount: salesData.reduce((sum, t) => sum + (t.debit || 0), 0),
       },
       payments: {
         count: paymentData.length,
-        totalAmount: paymentData.reduce((sum, t) => sum + t.credit, 0),
-      },
-      pending: {
-        count: customers.filter(c => c.currentBalance > 0).length,
-        totalAmount: customers.reduce((sum, c) => sum + Math.max(0, c.currentBalance), 0),
+        totalAmount: paymentData.reduce((sum, t) => sum + (t.credit || 0), 0),
       },
     };
   };
@@ -111,10 +107,10 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Loading reports...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-green-600"></div>
+          <p className="mt-4 text-gray-600 text-sm font-medium">Loading reports...</p>
         </div>
       </div>
     );
@@ -137,23 +133,11 @@ export default function ReportsPage() {
         'Total Jama (₹)': row.totalJama,
       }));
       filename = 'outstanding_report';
-    } else if (reportType === 'pending') {
-      dataToExport = customers
-        .filter(c => c.currentBalance > 0)
-        .sort((a, b) => b.currentBalance - a.currentBalance)
-        .map(customer => ({
-          'Customer Name': customer.name,
-          'Mobile': customer.mobileNumber,
-          'Pending Amount (₹)': customer.currentBalance,
-          'Last Transaction': customer.lastTransactionDate ? new Date(customer.lastTransactionDate).toLocaleDateString('en-IN') : '-',
-        }));
-      filename = 'pending_payments_report';
     } else if (reportType === 'sales') {
       dataToExport = salesData.map(tx => ({
         'Date': new Date(tx.date).toLocaleDateString('en-IN'),
         'Customer': tx.customerId?.name || '-',
         'Particular': tx.particular,
-        'Type': tx.transactionType,
         'Amount (₹)': tx.debit,
       }));
       filename = 'sales_report';
@@ -162,7 +146,6 @@ export default function ReportsPage() {
         'Date': new Date(tx.date).toLocaleDateString('en-IN'),
         'Customer': tx.customerId?.name || '-',
         'Particular': tx.particular,
-        'Method': tx.paymentMethod,
         'Amount (₹)': tx.credit,
       }));
       filename = 'payments_report';
@@ -181,197 +164,146 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-sm text-gray-600 mt-1">View detailed business reports and insights</p>
+        <div className="px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <p className="text-xs text-gray-500 mt-1">Business insights & analytics</p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-8">
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Outstanding</p>
-            <h3 className="text-3xl font-bold text-orange-600">₹{reportStats.outstanding.totalAmount.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">{reportStats.outstanding.count} customers</p>
+      <main className="px-4 py-4 pb-20">
+        {/* Summary Stats - Compact */}
+        <div className="space-y-3 mb-6">
+          <div className="bg-orange-50 rounded-lg border border-orange-200 p-3">
+            <p className="text-xs text-orange-700 font-medium">Outstanding</p>
+            <p className="text-xl font-bold text-orange-600 mt-1">₹{(reportStats.outstanding.totalAmount || 0).toLocaleString('en-IN')}</p>
+            <p className="text-xs text-orange-600 mt-1">{reportStats.outstanding.count} customers</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Sales (Udhar)</p>
-            <h3 className="text-3xl font-bold text-red-600">₹{reportStats.sales.totalAmount.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">{reportStats.sales.count} transactions</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Payments (Jama)</p>
-            <h3 className="text-3xl font-bold text-green-600">₹{reportStats.payments.totalAmount.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">{reportStats.payments.count} transactions</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Pending Payments</p>
-            <h3 className="text-3xl font-bold text-blue-600">₹{reportStats.pending.totalAmount.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">{reportStats.pending.count} customers</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-red-50 rounded-lg border border-red-200 p-3">
+              <p className="text-xs text-red-700 font-medium">Sales (Udhar)</p>
+              <p className="text-lg font-bold text-red-600 mt-1">₹{((reportStats.sales.totalAmount || 0) / 1000).toFixed(1)}K</p>
+              <p className="text-xs text-red-600 mt-1">{reportStats.sales.count} entries</p>
+            </div>
+            <div className="bg-green-50 rounded-lg border border-green-200 p-3">
+              <p className="text-xs text-green-700 font-medium">Payments (Jama)</p>
+              <p className="text-lg font-bold text-green-600 mt-1">₹{((reportStats.payments.totalAmount || 0) / 1000).toFixed(1)}K</p>
+              <p className="text-xs text-green-600 mt-1">{reportStats.payments.count} entries</p>
+            </div>
           </div>
         </div>
 
-        {/* Date Filters */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+        {/* Date Filter */}
+        <div className="sticky top-16 z-30 bg-gray-50 -mx-4 px-4 py-3 border-b border-gray-200 space-y-2 mb-4">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-gray-600 font-medium">From</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <div>
+              <label className="text-xs text-gray-600 font-medium">To</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            {(startDate || endDate) && (
-              <button
-                onClick={() => {
-                  setStartDate('');
-                  setEndDate('');
-                }}
-                className="px-6 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-              >
-                Clear
-              </button>
-            )}
           </div>
+          {(startDate || endDate) && (
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-300"
+            >
+              Clear Dates
+            </button>
+          )}
         </div>
 
-        {/* Report Tabs */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="flex gap-0 border-b border-gray-200 overflow-x-auto">
-            {[
-              { id: 'outstanding', label: 'Outstanding Report', icon: '📋' },
-              { id: 'pending', label: 'Pending Payments', icon: '⏳' },
-              { id: 'sales', label: 'Sales Report', icon: '📈' },
-              { id: 'payments', label: 'Payment Report', icon: '💰' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setReportType(tab.id)}
-                className={`px-6 py-4 font-medium text-sm transition-colors whitespace-nowrap ${
-                  reportType === tab.id
-                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Print and Export Buttons */}
-          <div className="p-4 border-b border-gray-200 bg-gray-50 flex gap-2 justify-end">
+        {/* Report Type Tabs - Horizontal Scrollable */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          {[
+            { id: 'outstanding', label: '📋 Outstanding', count: reportStats.outstanding.count },
+            { id: 'sales', label: '📈 Sales', count: reportStats.sales.count },
+            { id: 'payments', label: '💰 Payments', count: reportStats.payments.count }
+          ].map(tab => (
             <button
-              onClick={handlePrint}
-              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center gap-2"
+              key={tab.id}
+              onClick={() => setReportType(tab.id)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                reportType === tab.id
+                  ? 'bg-green-100 text-green-700 ring-2 ring-green-500'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4H7a2 2 0 01-2-2v-4a2 2 0 012-2h10a2 2 0 012 2v4a2 2 0 01-2 2zm2-6a2 2 0 100-4 2 2 0 000 4z" />
-              </svg>
-              Print
+              {tab.label} ({tab.count})
             </button>
-            <button
-              onClick={handleExportCSV}
-              className="px-4 py-2 bg-green-50 text-green-600 rounded-lg font-medium hover:bg-green-100 transition-colors flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export CSV
-            </button>
-          </div>
+          ))}
+        </div>
 
-          <div className="p-6" id="report-content">
+        {/* Action Buttons */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={handlePrint}
+            className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 rounded-lg text-sm transition-colors"
+          >
+            🖨️ Print
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 font-medium py-2 rounded-lg text-sm transition-colors"
+          >
+            💾 Export
+          </button>
+        </div>
 
+        {/* Report Content */}
+        <div id="report-content">
           {/* Outstanding Report */}
           {reportType === 'outstanding' && (
-            <div>
+            <div className="space-y-3">
               {outstandingData.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mobile</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Outstanding</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total Udhar</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total Jama</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {outstandingData.map((row) => (
-                        <tr key={row.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.name}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{row.mobile}</td>
-                          <td className="px-6 py-4 text-sm capitalize"><span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{row.type}</span></td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-orange-600">
-                            ₹{row.outstanding.toLocaleString('en-IN')}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right text-red-600">
-                            ₹{row.totalUdhar.toLocaleString('en-IN')}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right text-green-600">
-                            ₹{row.totalJama.toLocaleString('en-IN')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No outstanding records found
-                </div>
-              )}
-            </div>
-          )}
+                outstandingData.map((row) => (
+                  <div key={row.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-xs hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-gray-900">{row.name}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">{row.mobile}</p>
+                      </div>
+                      <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2">
+                        Pending
+                      </span>
+                    </div>
 
-          {/* Pending Payments */}
-          {reportType === 'pending' && (
-            <div>
-              {reportStats.pending.count > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mobile</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Pending Amount</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Last Transaction</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {customers.filter(c => c.currentBalance > 0).sort((a, b) => b.currentBalance - a.currentBalance).map((customer) => (
-                        <tr key={customer._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{customer.name}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{customer.mobileNumber}</td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-blue-600">
-                            ₹{customer.currentBalance.toLocaleString('en-IN')}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {customer.lastTransactionDate ? new Date(customer.lastTransactionDate).toLocaleDateString('en-IN') : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    <div className="bg-orange-50 rounded-lg p-3 mb-3">
+                      <p className="text-xs text-orange-700 font-medium">Outstanding</p>
+                      <p className="text-2xl font-bold text-orange-600 mt-1">₹{(row.outstanding || 0).toLocaleString('en-IN')}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-red-50 rounded-lg p-2">
+                        <p className="text-xs text-red-700 font-medium">Udhar</p>
+                        <p className="text-sm font-bold text-red-600 mt-1">₹{(row.totalUdhar || 0).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-2">
+                        <p className="text-xs text-green-700 font-medium">Jama</p>
+                        <p className="text-sm font-bold text-green-600 mt-1">₹{(row.totalJama || 0).toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No pending payments
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 text-sm">✅ No outstanding records</p>
                 </div>
               )}
             </div>
@@ -379,84 +311,87 @@ export default function ReportsPage() {
 
           {/* Sales Report */}
           {reportType === 'sales' && (
-            <div>
+            <div className="space-y-3">
               {salesData.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Particular</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {salesData.map((tx) => (
-                        <tr key={tx._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {new Date(tx.date).toLocaleDateString('en-IN')}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 font-medium">{tx.customerId?.name || '-'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{tx.particular}</td>
-                          <td className="px-6 py-4 text-sm"><span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">{tx.transactionType}</span></td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
-                            ₹{tx.debit.toLocaleString('en-IN')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                salesData.map((tx) => (
+                  <div key={tx._id} className="bg-white rounded-lg border border-gray-200 p-3 shadow-xs hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {new Date(tx.date).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {tx.customerId?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        Udhar
+                      </span>
+                    </div>
+
+                    {tx.particular && (
+                      <p className="text-xs text-gray-600 mb-2 truncate">{tx.particular}</p>
+                    )}
+
+                    <div className="bg-red-50 rounded-lg p-2">
+                      <p className="text-lg font-bold text-red-600">
+                        ₹{(tx.debit || 0).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No sales records found for the selected period
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 text-sm">No sales records for this period</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Payment Report */}
+          {/* Payments Report */}
           {reportType === 'payments' && (
-            <div>
+            <div className="space-y-3">
               {paymentData.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Particular</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Method</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {paymentData.map((tx) => (
-                        <tr key={tx._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {new Date(tx.date).toLocaleDateString('en-IN')}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 font-medium">{tx.customerId?.name || '-'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{tx.particular}</td>
-                          <td className="px-6 py-4 text-sm capitalize"><span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">{tx.paymentMethod}</span></td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-green-600">
-                            ₹{tx.credit.toLocaleString('en-IN')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                paymentData.map((tx) => (
+                  <div key={tx._id} className="bg-white rounded-lg border border-gray-200 p-3 shadow-xs hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {new Date(tx.date).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {tx.customerId?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        Jama
+                      </span>
+                    </div>
+
+                    {tx.particular && (
+                      <p className="text-xs text-gray-600 mb-2 truncate">{tx.particular}</p>
+                    )}
+
+                    <div className="bg-green-50 rounded-lg p-2">
+                      <p className="text-lg font-bold text-green-600">
+                        ₹{(tx.credit || 0).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No payment records found for the selected period
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 text-sm">No payment records for this period</p>
                 </div>
               )}
             </div>
           )}
-          </div>
         </div>
       </main>
     </div>

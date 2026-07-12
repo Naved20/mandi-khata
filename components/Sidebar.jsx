@@ -122,16 +122,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* Sidebar */}
       <aside
         className={`
-          w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-50
+          w-full sm:w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-50
           overflow-y-auto flex flex-col transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Brand Section */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex items-center justify-center relative">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center relative">
                 <Image 
                   src="/logo01.png" 
                   alt="Mandi Khata" 
@@ -143,14 +143,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Mandi Khata</h1>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900">Mandi Khata</h1>
                 <p className="text-xs text-gray-500">Dashboard</p>
               </div>
             </div>
             {/* Close button for mobile */}
             <button
               onClick={() => setIsOpen(false)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-gray-500 hover:text-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -160,8 +160,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="mt-6 px-4 flex-1">
-          <div className="space-y-2">
+        <nav className="mt-4 sm:mt-6 px-2 sm:px-4 flex-1">
+          <div className="space-y-1 sm:space-y-2">
             {currentItems.map((item) => {
               // Exact match for dashboard, prefix match for others
               const isActive = item.href === '/dashboard/user' 
@@ -173,18 +173,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsOpen(false)} // Close sidebar on mobile after click
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-green-50 text-green-700 font-medium shadow-sm'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className={isActive ? 'text-green-600' : 'text-gray-400'}>
+                  <span className={`${isActive ? 'text-green-600' : 'text-gray-400'} w-4 h-4 sm:w-5 sm:h-5`}>
                     {item.icon}
                   </span>
-                  <span>{item.name}</span>
+                  <span className="text-sm sm:text-base">{item.name}</span>
                   {isActive && (
-                    <div className="ml-auto w-1 h-6 bg-green-600 rounded-r-full"></div>
+                    <div className="ml-auto w-1 h-4 sm:h-6 bg-green-600 rounded-r-full"></div>
                   )}
                 </Link>
               );
@@ -193,9 +193,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </nav>
 
         {/* User Section & Logout */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
           {user && (
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <p className="text-xs text-gray-600 mb-1">Logged in as</p>
               <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
               <p className="text-xs text-gray-600 truncate">{user.email}</p>
@@ -204,9 +204,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           )}
           <button
             onClick={handleLogout}
-            className="w-full py-2 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 px-3 bg-red-50 text-red-600 rounded-lg font-medium text-xs sm:text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
@@ -214,7 +214,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* Footer Info */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
           <p className="text-xs text-gray-500 text-center">Mandi Khata v1.0</p>
         </div>
       </aside>

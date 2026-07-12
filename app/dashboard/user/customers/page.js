@@ -154,7 +154,14 @@ export default function CustomersPage() {
   });
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 sm:h-10 w-8 sm:w-10 border-b-2 border-green-600"></div>
+          <p className="mt-3 sm:mt-4 text-gray-600 text-sm sm:text-base">Loading customers...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -163,14 +170,15 @@ export default function CustomersPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Customers</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage your customer ledgers and accounts</p>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Customers</h1>
+            <p className="text-xs text-gray-600 mt-0.5 sm:mt-1">Manage customer ledgers and accounts</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm sm:text-base"
+            className="px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-xs sm:text-sm lg:text-base"
           >
-            Add Customer
+            <span className="hidden sm:inline">Add Customer</span>
+            <span className="sm:hidden">+ Add</span>
           </button>
         </div>
       </header>
@@ -178,69 +186,69 @@ export default function CustomersPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8">
         {/* Search and Filter */}
-        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-6">
+        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
           <input
             type="text"
-            placeholder="Search by name or mobile..."
+            placeholder="Search name or mobile..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
 
-        {/* Customer Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Customer Cards Grid - Mobile responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {filteredCustomers.map((customer) => (
-            <div key={customer._id || customer.id} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+            <div key={customer._id || customer.id} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4 lg:p-6 hover:shadow-md transition-shadow">
               <Link href={`/dashboard/user/customers/${customer._id || customer.id}`}>
-                <div className="flex items-start justify-between mb-4 cursor-pointer">
+                <div className="flex items-start justify-between mb-3 sm:mb-4 cursor-pointer">
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{customer.name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-500">{customer.mobileNumber}</p>
+                    <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 truncate">{customer.name}</h3>
+                    <p className="text-xs text-gray-500 truncate">{customer.mobileNumber}</p>
                   </div>
                 </div>
 
                 {customer.village && (
-                  <p className="text-xs sm:text-sm text-gray-600 mb-4">{customer.village}</p>
+                  <p className="text-xs text-gray-600 mb-3 sm:mb-4 truncate">{customer.village}</p>
                 )}
 
                 {/* Stats */}
-                <div className="space-y-2 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-gray-600">Current Balance:</span>
+                <div className="space-y-1.5 sm:space-y-2 pt-3 sm:pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Balance:</span>
                     <span className={`font-semibold ${customer.currentBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       ₹{customer.currentBalance.toLocaleString('en-IN')}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-gray-600">Total Udhar:</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Udhar:</span>
                     <span className="font-semibold text-red-600">₹{customer.totalUdhar.toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-gray-600">Total Jama:</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Jama:</span>
                     <span className="font-semibold text-green-600">₹{customer.totalJama.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
                 {customer.lastTransactionDate && (
-                  <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-                    Last transaction: {new Date(customer.lastTransactionDate).toLocaleDateString('en-IN')}
+                  <p className="text-xs text-gray-500 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+                    Last: {new Date(customer.lastTransactionDate).toLocaleDateString('en-IN')}
                   </p>
                 )}
               </Link>
 
-              {/* Action Buttons */}
-              <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
+              {/* Action Buttons - Mobile compact */}
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 flex gap-2">
                 <button
                   onClick={() => handleEdit(customer)}
-                  className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium text-xs sm:text-sm hover:bg-blue-100 transition-colors"
+                  className="flex-1 px-2 py-1.5 sm:px-3 sm:py-2 bg-blue-50 text-blue-600 rounded-lg font-medium text-xs hover:bg-blue-100 transition-colors"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(customer._id || customer.id)}
                   disabled={deleting}
-                  className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-xs sm:text-sm hover:bg-red-100 transition-colors disabled:opacity-50"
+                  className="flex-1 px-2 py-1.5 sm:px-3 sm:py-2 bg-red-50 text-red-600 rounded-lg font-medium text-xs hover:bg-red-100 transition-colors disabled:opacity-50"
                 >
                   Delete
                 </button>
@@ -256,12 +264,12 @@ export default function CustomersPage() {
         )}
       </main>
 
-      {/* Modal */}
+      {/* Modal - Mobile responsive */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">{editingId ? 'Edit Customer' : 'Add New Customer'}</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">{editingId ? 'Edit Customer' : 'Add Customer'}</h2>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -274,12 +282,12 @@ export default function CustomersPage() {
                     notes: '',
                   });
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-lg"
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input
@@ -292,7 +300,7 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Mobile *</label>
                 <input
                   type="tel"
                   name="mobileNumber"
@@ -332,7 +340,7 @@ export default function CustomersPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 />
               </div>
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -346,13 +354,13 @@ export default function CustomersPage() {
                       notes: '',
                     });
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 text-sm"
+                  className="flex-1 px-3 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm"
+                  className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm"
                 >
                   {editingId ? 'Update' : 'Create'}
                 </button>

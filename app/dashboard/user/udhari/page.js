@@ -7,7 +7,7 @@ import { getAuthHeaders } from '@/utils/api';
 export default function UdhariManagementPage() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState('all'); // all, only_udhari, paid
+  const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -36,33 +36,31 @@ export default function UdhariManagementPage() {
     }
   };
 
-  // Filter customers based on udhari status
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.mobileNumber.includes(searchTerm);
     
     let matchesFilter = true;
     if (filterType === 'only_udhari') {
-      matchesFilter = customer.currentBalance > 0; // Outstanding amount
+      matchesFilter = customer.currentBalance > 0;
     } else if (filterType === 'paid') {
-      matchesFilter = customer.currentBalance <= 0; // No outstanding
+      matchesFilter = customer.currentBalance <= 0;
     }
     
     return matchesSearch && matchesFilter;
   });
 
-  // Calculate totals
-  const totalUdhari = customers.reduce((sum, c) => sum + c.totalUdhar, 0);
-  const totalJama = customers.reduce((sum, c) => sum + c.totalJama, 0);
-  const totalOutstanding = customers.reduce((sum, c) => sum + Math.max(0, c.currentBalance), 0);
+  const totalUdhari = customers.reduce((sum, c) => sum + (c.totalUdhar || 0), 0);
+  const totalJama = customers.reduce((sum, c) => sum + (c.totalJama || 0), 0);
+  const totalOutstanding = customers.reduce((sum, c) => sum + Math.max(0, c.currentBalance || 0), 0);
   const customersWithUdhari = customers.filter(c => c.currentBalance > 0).length;
 
   if (loading) {
     return (
-      <div className=" min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Loading udhari data...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-green-600"></div>
+          <p className="mt-4 text-gray-600 text-sm font-medium">Loading data...</p>
         </div>
       </div>
     );
@@ -72,155 +70,132 @@ export default function UdhariManagementPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-8 py-5">
-          <h1 className="text-2xl font-bold text-gray-900">Udhari Management</h1>
-          <p className="text-sm text-gray-600 mt-1">Track and manage credit transactions</p>
+        <div className="px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Udhari</h1>
+          <p className="text-xs text-gray-500 mt-1">Track credit & payments</p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className=" px-8 py-8">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Total Udhar Given</p>
-            <h3 className="text-3xl font-bold text-red-600">₹{totalUdhari.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">Total inventory distributed</p>
+      <main className="px-4 py-4 pb-20">
+        {/* Summary Cards - Compact Mobile Layout */}
+        <div className="space-y-3 mb-6">
+          {/* Card 1: Total Outstanding (Highlighted) */}
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-orange-700 font-medium">Pending Amount</p>
+                <h2 className="text-2xl font-bold text-orange-600 mt-1">₹{totalOutstanding.toLocaleString('en-IN')}</h2>
+                <p className="text-xs text-orange-600 mt-2">{customersWithUdhari} customers with balance</p>
+              </div>
+              <div className="text-3xl">📊</div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Total Jama Collected</p>
-            <h3 className="text-3xl font-bold text-green-600">₹{totalJama.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">Total payments received</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Outstanding Amount</p>
-            <h3 className="text-3xl font-bold text-orange-600">₹{totalOutstanding.toLocaleString('en-IN')}</h3>
-            <p className="text-xs text-gray-500 mt-2">Pending to collect</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Customers with Udhari</p>
-            <h3 className="text-3xl font-bold text-blue-600">{customersWithUdhari}</h3>
-            <p className="text-xs text-gray-500 mt-2">Out of {customers.length} total</p>
-          </div>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Search by name or mobile..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="all">All Customers</option>
-              <option value="only_udhari">Only with Outstanding</option>
-              <option value="paid">Fully Paid</option>
-            </select>
+          {/* Cards 2-4: Other metrics in row */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-red-50 rounded-lg border border-red-200 p-3">
+              <p className="text-xs text-red-700 font-medium">Total Udhar</p>
+              <p className="text-lg font-bold text-red-600 mt-1">₹{(totalUdhari / 1000).toFixed(1)}K</p>
+            </div>
+            <div className="bg-green-50 rounded-lg border border-green-200 p-3">
+              <p className="text-xs text-green-700 font-medium">Total Jama</p>
+              <p className="text-lg font-bold text-green-600 mt-1">₹{(totalJama / 1000).toFixed(1)}K</p>
+            </div>
+            <div className="bg-blue-50 rounded-lg border border-blue-200 p-3">
+              <p className="text-xs text-blue-700 font-medium">Total Customers</p>
+              <p className="text-lg font-bold text-blue-600 mt-1">{customers.length}</p>
+            </div>
           </div>
         </div>
 
-        {/* Udhari Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mobile</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total Udhar</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total Jama</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Outstanding</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((customer) => (
-                    <tr key={customer._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {customer.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {customer.mobileNumber}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-red-600">
-                        ₹{customer.totalUdhar.toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-green-600">
-                        ₹{customer.totalJama.toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right font-bold">
-                        <span className={customer.currentBalance > 0 ? 'text-orange-600' : 'text-green-600'}>
-                          ₹{customer.currentBalance.toLocaleString('en-IN')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          customer.currentBalance > 0
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {customer.currentBalance > 0 ? 'Outstanding' : 'Paid'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Link href={`/dashboard/user/customers/${customer._id}`}>
-                          <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors">
-                            View
-                          </button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
-                      No customers found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* Quick Filters */}
+        <div className="sticky top-20 z-30 bg-gray-50 -mx-4 px-4 py-3 border-b border-gray-200 space-y-2 mb-4">
+          <input
+            type="text"
+            placeholder="Search name or mobile..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="all">All Customers</option>
+            <option value="only_udhari">With Outstanding</option>
+            <option value="paid">Fully Paid</option>
+          </select>
         </div>
 
-        {/* Instructions */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-bold text-blue-900 mb-3">How to Manage Udhari:</h3>
-          <ul className="space-y-2 text-sm text-blue-800">
-            <li className="flex items-start gap-3">
-              <span className="font-bold">1.</span>
-              <span>Click &quot;View&quot; to open customer profile</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-bold">2.</span>
-              <span>Click &quot;Add Transaction&quot; to record inventory given (Udhar)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-bold">3.</span>
-              <span>Select transaction type: &quot;Inventory Udhar&quot; for giving inventory on credit</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-bold">4.</span>
-              <span>When customer pays, add &quot;Cash Jama&quot; transaction to record payment</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-bold">5.</span>
-              <span>Outstanding amount automatically updates after each transaction</span>
-            </li>
-          </ul>
+        {/* Customer Cards List - No horizontal scroll */}
+        <div className="space-y-3">
+          {filteredCustomers.length > 0 ? (
+            filteredCustomers.map((customer) => (
+              <div 
+                key={customer._id}
+                className="bg-white rounded-lg border border-gray-200 p-4 shadow-xs hover:shadow-md transition-shadow"
+              >
+                {/* Header: Name and Status */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-gray-900 truncate">{customer.name}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">{customer.mobileNumber}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2 ${
+                    customer.currentBalance > 0
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-green-100 text-green-700'
+                  }`}>
+                    {customer.currentBalance > 0 ? 'Pending' : 'Paid'}
+                  </span>
+                </div>
+
+                {/* Main Amount - Large and Clear */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                  <p className="text-xs text-gray-600 font-medium">Outstanding Balance</p>
+                  <p className={`text-2xl font-bold mt-1 ${
+                    customer.currentBalance > 0 ? 'text-orange-600' : 'text-green-600'
+                  }`}>
+                    ₹{(customer.currentBalance || 0).toLocaleString('en-IN')}
+                  </p>
+                </div>
+
+                {/* Details Grid - Compact */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-red-50 rounded-lg p-2">
+                    <p className="text-xs text-red-700 font-medium">Udhar Given</p>
+                    <p className="text-sm font-bold text-red-600 mt-0.5">₹{(customer.totalUdhar || 0).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-2">
+                    <p className="text-xs text-green-700 font-medium">Jama Collected</p>
+                    <p className="text-sm font-bold text-green-600 mt-0.5">₹{(customer.totalJama || 0).toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <Link href={`/dashboard/user/customers/${customer._id}`} className="block w-full">
+                  <button className="w-full bg-green-50 hover:bg-green-100 text-green-700 font-medium py-2 rounded-lg text-sm transition-colors">
+                    View Details →
+                  </button>
+                </Link>
+              </div>
+            ))
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+              <p className="text-gray-500 text-sm">No customers found</p>
+            </div>
+          )}
         </div>
+
+        {/* Help Section */}
+        {filteredCustomers.length > 0 && (
+          <div className="mt-8 bg-blue-50 rounded-lg border border-blue-200 p-4">
+            <h3 className="font-bold text-blue-900 text-sm mb-2">💡 Tip</h3>
+            <p className="text-xs text-blue-800">Tap "View Details" to add transactions, record payments, or view complete history for any customer.</p>
+          </div>
+        )}
       </main>
     </div>
   );

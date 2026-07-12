@@ -20,32 +20,33 @@ export default function InventoryPage() {
   const [priceHistory, setPriceHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Fetch inventory function
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/inventory', {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        setInventory(data.inventory || []);
+      }
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load inventory on mount
   useEffect(() => {
-    const loadInventory = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/inventory', {
-          headers: getAuthHeaders(),
-        });
-
-        if (response.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          setInventory(data.inventory || []);
-        }
-      } catch (error) {
-        console.error('Error loading inventory:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInventory();
+    fetchInventory();
   }, []);
 
   const handleFormChange = (e) => {
@@ -165,73 +166,81 @@ export default function InventoryPage() {
   });
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 sm:h-10 w-8 sm:w-10 border-b-2 border-green-600"></div>
+          <p className="mt-3 sm:mt-4 text-gray-600 text-sm sm:text-base">Loading inventory...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - Mobile responsive */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage your items</p>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Inventory</h1>
+            <p className="text-xs text-gray-600 mt-0.5 sm:mt-1">Manage your items</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm sm:text-base"
+            className="px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-xs sm:text-sm lg:text-base"
           >
-            Add Item
+            <span className="hidden sm:inline">Add Item</span>
+            <span className="sm:hidden">+ Add</span>
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8">
-        {/* Search */}
-        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Search - Mobile responsive */}
+        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
           <input
             type="text"
             placeholder="Search items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
 
-        {/* Inventory Table */}
+        {/* Inventory Table - Mobile responsive */}
         <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Item Name</th>
-                  <th className="px-4 sm:px-6 py-3 text-right text-xs sm:text-sm font-semibold text-gray-700">Price</th>
-                  <th className="px-4 sm:px-6 py-3 text-center text-xs sm:text-sm font-semibold text-gray-700">Actions</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Item</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-700">Price</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredInventory.map((item) => (
                   <tr key={item._id} className="hover:bg-gray-50">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm font-medium text-gray-900">
                       <a href={`/dashboard/user/inventory/${item._id}`} className="text-green-600 hover:text-green-700 hover:underline">
                         {item.itemName}
                       </a>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-right font-semibold">
+                    <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-right font-semibold">
                       ₹{(item.price || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-center space-x-2">
+                    <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-center space-x-1 sm:space-x-2">
                       <button
                         onClick={() => handleEdit(item)}
-                        className="px-2 sm:px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                        className="px-2 py-1 sm:px-2 sm:py-1 lg:px-3 lg:py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(item._id)}
                         disabled={deleting}
-                        className="px-2 sm:px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                        className="px-2 py-1 sm:px-2 sm:py-1 lg:px-3 lg:py-1 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
                       >
                         Delete
                       </button>
@@ -243,19 +252,19 @@ export default function InventoryPage() {
           </div>
 
           {filteredInventory.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
               No items found
             </div>
           )}
         </div>
       </main>
 
-      {/* Modal */}
+      {/* Modal - Mobile responsive */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">{editingId ? 'Edit Item' : 'Add New Item'}</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-lg w-full max-w-md lg:max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">{editingId ? 'Edit Item' : 'Add Item'}</h2>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -267,18 +276,18 @@ export default function InventoryPage() {
                     notes: '',
                   });
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-lg"
               >
                 ✕
               </button>
             </div>
             
-            <div className="p-4 sm:p-6">
-              {/* Grid Layout: Form on Left, History on Right */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-3 sm:p-4 lg:p-6">
+              {/* Grid Layout: Form on Left, History on Right - Stacked on mobile */}
+              <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-1 xl:grid-cols-2 lg:gap-6">
                 {/* Form Section */}
                 <div>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Item Name *</label>
                       <input
@@ -313,7 +322,7 @@ export default function InventoryPage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                       />
                     </div>
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
                       <button
                         type="button"
                         onClick={() => {
@@ -326,13 +335,13 @@ export default function InventoryPage() {
                             notes: '',
                           });
                         }}
-                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 text-sm"
+                        className="flex-1 px-3 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 text-sm"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm"
+                        className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm"
                       >
                         {editingId ? 'Update' : 'Create'}
                       </button>
